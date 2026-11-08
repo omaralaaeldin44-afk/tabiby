@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""يولّد صفحات الموقع التعريفي في site/ من قالب مشترك (رأس + تذييل).
+الاستخدام: python3 scripts/build-site.py
+"""
+from pathlib import Path
+
+SITE = Path(__file__).resolve().parent.parent / "site"
+APP = "app/"  # التطبيق يُنشر تحت /app/ بجوار الموقع
+REPO = "https://github.com/omaralaaeldin44-afk/tabiby"
+
+NAV = [
+    ("index.html", "الرئيسية"),
+    ("features.html", "المميزات"),
+    ("how.html", "كيف يعمل"),
+    ("privacy.html", "الخصوصية والأمان"),
+    ("developers.html", "للمطورين والمستشفيات"),
+]
+
+
+def page(file, title, desc, body):
+    cur = ' aria-current="page"'
+    nav = "".join(f'<a href="{f}"{cur if f == file else ""}>{t}</a>' for f, t in NAV)
+    html = f"""<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<meta name="description" content="{desc}">
+<title>{title} – طبيبي يفهمني</title>
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+<header class="top"><div class="wrap">
+  <a class="brand" href="index.html"><img src="img/icon.svg" alt="">طبيبي يفهمني</a>
+  <nav class="nav" aria-label="صفحات الموقع">{nav}</nav>
+  <a class="cta primary" href="{APP}">افتح التطبيق</a>
+</div></header>
+<main id="main">
+{body}
+</main>
+<footer><div class="wrap">
+  <div><strong>طبيبي يفهمني – Tabibi Yefhamni</strong><br>وسيلة مساعدة على التواصل فقط. لا يقدّم تشخيصًا ولا علاجًا ولا جرعات دوائية، ولا يغني عن مترجم لغة الإشارة.</div>
+  <div><a href="{APP}">التطبيق</a> · <a href="privacy.html">الخصوصية</a> · <a href="{REPO}">الكود على GitHub</a></div>
+</div></footer>
+</body>
+</html>
+"""
+    (SITE / file).write_text(html, encoding="utf-8")
+
+
+def phone(img, alt):
+    return f'<div class="phone"><img src="img/{img}" alt="{alt}" loading="lazy"></div>'
+
+
+# ---------------- الرئيسية ----------------
+page("index.html", "الرئيسية",
+     "تطبيق عربي يساعد المرضى الصم وضعاف السمع في مصر على التواصل مع الأطباء والممرضين.", f"""
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="pill">نسخة أولى تجريبية — بيانات تجريبية فقط</span>
+    <h1>طبيبي يفهمني</h1>
+    <p class="sub">تطبيق يساعد المرضى الصم وضعاف السمع في مصر على التواصل مع الأطباء والممرضين، عندما لا يوجد مترجم لغة إشارة.</p>
+    <div class="actions">
+      <a class="cta primary" href="{APP}">🙋 جرّب التطبيق الآن</a>
+      <a class="cta ghost" href="how.html">📖 كيف يعمل؟</a>
+    </div>
+  </div>
+  {phone("home.png", "الشاشة الرئيسية لتطبيق طبيبي يفهمني")}
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>لماذا هذا التطبيق؟</h2>
+  <p class="lead">في العيادة أو الطوارئ قد لا يجد المريض الأصم من يترجم له. الأسئلة تُطرح بالكلام، والإجابات تضيع. «طبيبي يفهمني» يجعل الحوار مكتوبًا ومرئيًا وواضحًا للطرفين.</p>
+  <div class="grid">
+    <div class="card"><div class="ico">🖼️</div><h3>الأعراض بالصور</h3><p>المريض يضغط على صورة العرض ويحدد شدته دون الحاجة للكتابة.</p></div>
+    <div class="card"><div class="ico">📍</div><h3>مكان الألم</h3><p>صورة للجسم يحدد عليها المريض مكان الألم وشدته.</p></div>
+    <div class="card"><div class="ico">❓</div><h3>أسئلة جاهزة للطبيب</h3><p>الطبيب يختار سؤالًا فيظهر على هاتف المريض مكتوبًا مع فيديو الإشارة إن توفر.</p></div>
+    <div class="card"><div class="ico">🆘</div><h3>أحتاج مساعدة الآن</h3><p>زر كبير يعرض رسالة واضحة، ويرسل تنبيهًا مرئيًا للطبيب عند الاتصال بالنظام.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>من الشاشات</h2>
+  <div class="shots">
+    <figure>{phone("symptoms.png", "شاشة اختيار الأعراض بالصور")}<figcaption>الأعراض بالصور<small>صداع، ألم بطن، ألم صدر، دوخة، حرارة…</small></figcaption></figure>
+    <figure>{phone("question.png", "سؤال الطبيب على شاشة المريض")}<figcaption>سؤال الطبيب<small>نص كبير وإجابات بالضغط</small></figcaption></figure>
+    <figure>{phone("staff.png", "لوحة الطبيب والممرض")}<figcaption>لوحة الطبيب<small>بعد تسجيل الدخول فقط</small></figcaption></figure>
+  </div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>بصراحة: ما الموجود وما الناقص</h2>
+  <div class="grid">
+    <div class="ok"><strong>✓ يعمل الآن</strong><br>الأعراض، مكان الألم، الأسئلة، المحادثة بين هاتفين عبر خادم المستشفى، طلب المساعدة، لوحة إدارة المحتوى، والعمل دون إنترنت.</div>
+    <div class="note"><strong>⚠️ غير متوفر بعد</strong><br>فيديوهات لغة الإشارة المصرية الحقيقية لم تُصوَّر بعد. كل الشاشات تعرض «الفيديو غير متوفر حاليًا» مع النص المكتوب.</div>
+  </div>
+  <p class="lead" style="margin-top:16px">هل أنت مترجم لغة إشارة مصرية أو جمعية للصم؟ <a href="developers.html#signers">ساعدنا في تصوير الفيديوهات</a>.</p>
+</div></section>
+""")
+
+# ---------------- المميزات ----------------
+page("features.html", "المميزات", "مميزات تطبيق طبيبي يفهمني للمريض والطبيب ومدير المحتوى.", f"""
+<div class="page-head"><div class="wrap"><h1>المميزات</h1><p class="lead">ثلاثة أدوار في التطبيق: المريض، والطبيب أو الممرض، ومدير المحتوى. لكل دور شاشاته.</p></div></div>
+
+<section><div class="wrap split">
+  <div>
+    <h2>🙋 للمريض</h2>
+    <ul class="check">
+      <li>اختيار الأعراض بالصور: الصداع، ألم البطن، ألم الصدر، الدوخة، الحرارة، الغثيان، الحساسية، صعوبة التنفس، والألم في أماكن أخرى.</li>
+      <li>تحديد الشدة: خفيف، متوسط، شديد.</li>
+      <li>تحديد مكان الألم على صورة الجسم.</li>
+      <li>الإجابة على أسئلة الطبيب بالضغط: نعم، لا، لا أعرف، أو اختيارات.</li>
+      <li>كتابة رسالة للطبيب مع جمل سريعة جاهزة.</li>
+      <li>مشاهدة السؤال مكتوبًا، ومعه فيديو الإشارة إن توفر.</li>
+      <li>تنبيه «اطلب المساعدة فورًا» عند اختيار صعوبة التنفس أو ألم الصدر الشديد.</li>
+      <li>لا يطلب الاسم الحقيقي ولا رقم الهاتف.</li>
+    </ul>
+  </div>
+  {phone("pain.png", "شاشة تحديد مكان الألم")}
+</div></section>
+
+<section class="alt"><div class="wrap split">
+  <div>
+    <h2>👨‍⚕️ للطبيب والممرض</h2>
+    <ul class="check">
+      <li>تسجيل دخول آمن قبل الوصول لأي بيانات مريض.</li>
+      <li>فتح المقابلة برمز من 4 أرقام يظهر على هاتف المريض.</li>
+      <li>قراءة الأعراض التي اختارها المريض، بعد موافقته فقط.</li>
+      <li>أكثر من 20 سؤالًا طبيًا جاهزًا مرتبة حسب الموضوع مع بحث.</li>
+      <li>كتابة سؤال جديد بخط كبير، واختيار نوع الإجابة.</li>
+      <li>تنبيه مرئي وامض واهتزاز عند طلب المريض المساعدة، دون الاعتماد على الصوت.</li>
+      <li>تسجيل خروج تلقائي بعد 15 دقيقة دون نشاط.</li>
+    </ul>
+  </div>
+  {phone("staff-room.png", "غرفة المقابلة لدى الطبيب")}
+</div></section>
+
+<section><div class="wrap split">
+  <div>
+    <h2>🤟 مكتبة لغة الإشارة</h2>
+    <p>8 موضوعات و49 كلمة وجملة: التحية والتعريف، الألم ومكانه، الصداع والدوخة والحرارة، الحساسية من الأدوية، الأدوية وطريقة استخدامها، الأسئلة الشائعة، الموافقة والرفض وطلب المساعدة، والطوارئ.</p>
+    <ul class="check">
+      <li>مشغّل بأزرار كبيرة: تشغيل، إيقاف، إعادة، وعرض أبطأ.</li>
+      <li>الجملة العربية مكتوبة أسفل الفيديو دائمًا.</li>
+      <li>حفظ الفيديو على الهاتف للمشاهدة دون إنترنت.</li>
+      <li>إذا لم يتوفر الفيديو تظهر رسالة صريحة بذلك. لا نعرض صورًا أو حركات مولّدة على أنها لغة إشارة.</li>
+    </ul>
+  </div>
+  {phone("sign.png", "صفحة إشارة والفيديو غير متوفر")}
+</div></section>
+
+<section class="alt"><div class="wrap split">
+  <div>
+    <h2>⚙️ لوحة إدارة المحتوى</h2>
+    <ul class="check">
+      <li>إضافة وتعديل الكلمات والجمل وفيديوهاتها.</li>
+      <li>إضافة الأسئلة الطبية وربط كل سؤال بفيديو.</li>
+      <li>إدارة الأعراض وصورها وأيقوناتها.</li>
+      <li>إدارة التصنيفات.</li>
+      <li>حالة كل فيديو واضحة: متوفر أو غير متوفر.</li>
+      <li>تصدير المحتوى واستيراده كملف.</li>
+    </ul>
+  </div>
+  {phone("admin.png", "لوحة إدارة المحتوى")}
+</div></section>
+""")
+
+# ---------------- كيف يعمل ----------------
+page("how.html", "كيف يعمل", "خطوات استخدام تطبيق طبيبي يفهمني للمريض والطبيب.", f"""
+<div class="page-head"><div class="wrap"><h1>كيف يعمل؟</h1><p class="lead">كل التعليمات مكتوبة. لا مكالمات صوتية ولا أصوات.</p></div></div>
+
+<section><div class="wrap split">
+  <div>
+    <h2>خطوات المريض</h2>
+    <ol class="steps">
+      <li><strong>اضغط «أنا مريض».</strong><p>ستجد كل ما تحتاجه لتوضيح حالتك.</p></li>
+      <li><strong>اختر الأعراض بالصور.</strong><p>اضغط على الصورة المناسبة ثم اختر الشدة.</p></li>
+      <li><strong>حدّد مكان الألم.</strong><p>اضغط على مكان الألم في صورة الجسم.</p></li>
+      <li><strong>ابدأ المقابلة.</strong><p>يظهر رمز من 4 أرقام. أعطِه للطبيب أو الممرض.</p></li>
+      <li><strong>وافق على المشاركة إن أردت.</strong><p>لا يرى الطبيب أعراضك إلا بعد موافقتك.</p></li>
+      <li><strong>اقرأ السؤال وأجب.</strong><p>اضغط نعم أو لا أو لا أعرف أو أحد الاختيارات.</p></li>
+    </ol>
+  </div>
+  {phone("question.png", "سؤال الطبيب على شاشة المريض")}
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>خطوات الطبيب أو الممرض</h2>
+  <ol class="steps">
+    <li><strong>سجّل الدخول.</strong><p>من «أنا طبيب أو ممرض».</p></li>
+    <li><strong>اكتب رمز المقابلة.</strong><p>الرمز الظاهر على هاتف المريض، أو اختر من قائمة المقابلات المفتوحة.</p></li>
+    <li><strong>اقرأ ما أبلغ به المريض.</strong><p>الأعراض وشدتها ومكان الألم ورسائله.</p></li>
+    <li><strong>اسأل.</strong><p>اختر سؤالًا جاهزًا أو اكتب سؤالًا جديدًا. يظهر فورًا على شاشة المريض.</p></li>
+  </ol>
+</div></section>
+
+<section><div class="wrap split">
+  <div>
+    <h2>🆘 عند الطوارئ</h2>
+    <p>زر «أحتاج مساعدة الآن» ظاهر في أسفل كل شاشات المريض. عند الضغط عليه:</p>
+    <ul class="check">
+      <li>تظهر رسالة حمراء كبيرة تطلب حضور الطبيب أو الممرض، ليُريها المريض لمن حوله.</li>
+      <li>إذا كان الهاتف متصلًا بنظام المستشفى، يصل تنبيه مرئي لشاشة الطبيب، ويرى المريض «تم استلام طلبك».</li>
+      <li>إذا لم يكن متصلًا، يقول التطبيق ذلك صراحة: «لم يُرسل أي تنبيه».</li>
+    </ul>
+  </div>
+  {phone("help.png", "شاشة أحتاج مساعدة الآن")}
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>📶 مع الإنترنت وبدونه</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>الميزة</th><th>دون اتصال</th><th>مع اتصال بنظام المستشفى</th></tr></thead>
+    <tbody>
+      <tr><td>الأعراض والصور ومكان الألم</td><td><span class="tag yes">يعمل</span></td><td><span class="tag yes">يعمل</span></td></tr>
+      <tr><td>الأسئلة والجمل المكتوبة</td><td><span class="tag yes">يعمل</span></td><td><span class="tag yes">يعمل</span></td></tr>
+      <tr><td>فيديوهات الإشارة</td><td><span class="tag part">المحفوظة على الهاتف فقط</span></td><td><span class="tag yes">يعمل</span></td></tr>
+      <tr><td>الرسائل بين هاتف المريض وهاتف الطبيب</td><td><span class="tag no">لا يعمل</span></td><td><span class="tag yes">يعمل</span></td></tr>
+      <tr><td>تنبيه المساعدة لشاشة الطبيب</td><td><span class="tag no">لا يُرسل — تظهر رسالة كبيرة فقط</span></td><td><span class="tag yes">يعمل</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="lead">بدون اتصال يمكن للمريض أن يُري شاشته للطبيب، أو يسلّمه الهاتف ليسجّل دخوله ويسأله عليه.</p>
+</div></section>
+""")
+
+# ---------------- الخصوصية ----------------
+page("privacy.html", "الخصوصية والأمان", "كيف يحمي تطبيق طبيبي يفهمني بيانات المرضى.", """
+<div class="page-head"><div class="wrap"><h1>الخصوصية والأمان</h1><p class="lead">بيانات المريض له. لا تُشارك إلا بموافقته، ولا يقرؤها إلا طبيب أو ممرض مسجّل الدخول.</p></div></div>
+
+<section><div class="wrap grid">
+  <div class="card"><div class="ico">🙈</div><h3>لا بيانات شخصية</h3><p>لا يطلب التطبيق الاسم الحقيقي ولا رقم الهاتف ولا الرقم القومي. «اسم للنداء» اختياري.</p></div>
+  <div class="card"><div class="ico">✅</div><h3>المشاركة بالموافقة</h3><p>الأعراض تبقى على هاتف المريض حتى يضغط «أوافق على مشاركة أعراضي»، ويمكنه إيقاف المشاركة في أي وقت.</p></div>
+  <div class="card"><div class="ico">🔐</div><h3>دخول آمن للطاقم</h3><p>كلمات المرور مشفّرة، مع حد للمحاولات الخاطئة، وانتهاء الجلسة، وخروج تلقائي بعد 15 دقيقة.</p></div>
+  <div class="card"><div class="ico">🗑️</div><h3>حذف تلقائي</h3><p>المقابلات تُحفظ في ذاكرة الخادم فقط، وتُحذف عند إنهائها أو بعد 12 ساعة. لا قاعدة بيانات.</p></div>
+  <div class="card"><div class="ico">🩺</div><h3>لا تشخيص</h3><p>التطبيق لا يشخّص ولا يصف علاجًا ولا جرعات. يعرض فقط ما أبلغ به المريض بنفسه.</p></div>
+  <div class="card"><div class="ico">🧪</div><h3>بيانات تجريبية</h3><p>النسخة الحالية تستخدم بيانات وحسابات تجريبية فقط. لا تستخدم بيانات مرضى حقيقية في الاختبار.</p></div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>حدود يجب معرفتها</h2>
+  <ul class="check">
+    <li>النسخة المنشورة على هذا الموقع تعمل في <strong>الوضع المحلي</strong>: البيانات على الجهاز نفسه فقط، والحماية فيه تجريبية وليست أمانًا حقيقيًا.</li>
+    <li>الحماية الحقيقية تحتاج تشغيل خادم المستشفى خلف اتصال مشفّر (HTTPS) وبحسابات حقيقية.</li>
+    <li>الحسابات التجريبية معلنة في الكود عمدًا للاختبار، ويجب حذفها قبل أي استخدام فعلي.</li>
+  </ul>
+</div></section>
+""")
+
+# ---------------- للمطورين ----------------
+page("developers.html", "للمطورين والمستشفيات", "تشغيل خادم طبيبي يفهمني، إضافة الفيديوهات، وتحويل التطبيق إلى APK.", f"""
+<div class="page-head"><div class="wrap"><h1>للمطورين والمستشفيات</h1><p class="lead">المشروع مفتوح للتطوير. الكود على <a href="{REPO}">GitHub</a>.</p></div></div>
+
+<section><div class="wrap">
+  <h2>تشغيل خادم المستشفى</h2>
+  <p>الخادم لا يحتاج مكتبات خارجية. يكفي Node.js 18 أو أحدث:</p>
+<pre><code>git clone {REPO}
+cd tabiby
+npm start   # http://localhost:3000</code></pre>
+  <p>افتح العنوان من هواتف المرضى والأطباء على نفس الشبكة، أو اكتبه في «الإعدادات» داخل التطبيق.</p>
+  <p>إضافة حساب حقيقي (يعطّل الحسابات التجريبية):</p>
+<pre><code>npm run add-staff -- dr.ahmed doctor "كلمة-مرور-قوية" "د. أحمد"</code></pre>
+</div></section>
+
+<section class="alt" id="signers"><div class="wrap">
+  <h2>🤟 إضافة فيديوهات لغة الإشارة</h2>
+  <p>نحتاج فيديوهات حقيقية لشخص يؤدي لغة الإشارة <strong>المصرية</strong>، يراجعها مختص. طريقتان للإضافة:</p>
+  <ol class="steps">
+    <li><strong>داخل التطبيق قبل البناء</strong><p>ضع الملف في <code>www/videos/</code> باسم معرّف الجملة، مثل <code>p1.mp4</code> لجملة «أين تشعر بالألم؟». المعرّفات ظاهرة في لوحة الإدارة.</p></li>
+    <li><strong>من لوحة الإدارة</strong><p>ارفع الفيديو من الهاتف مباشرة. يُحفظ على ذلك الجهاز.</p></li>
+  </ol>
+  <p class="lead">نصيحة للتصوير: خلفية سادة، إضاءة أمامية، يظهر الوجه واليدان كاملين، ومدة قصيرة لكل جملة.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>📱 تحويل التطبيق إلى APK</h2>
+  <p>المشروع مجهّز بـ Capacitor. يحتاج JDK 17 وAndroid SDK:</p>
+<pre><code>npm install
+npx cap add android
+npm run apk:debug
+# الناتج: android/app/build/outputs/apk/debug/app-debug.apk</code></pre>
+  <p>أو افتح المشروع في Android Studio بالأمر <code>npm run cap:open</code> وابنِ من هناك.</p>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>🗺️ ما يحتاج تطويرًا</h2>
+  <ul class="check">
+    <li>تصوير فيديوهات الإشارة المصرية ومراجعتها.</li>
+    <li>مزامنة مركزية للمحتوى بين الأجهزة (حاليًا تصدير/استيراد ملف).</li>
+    <li>ربط تنبيه المساعدة بنظام الاستدعاء في المستشفى.</li>
+    <li>تخزين دائم للمقابلات إن احتاجته المستشفى، مع سياسة حذف واضحة.</li>
+    <li>اختبار مع مرضى صم حقيقيين ومراجعة سهولة الاستخدام.</li>
+  </ul>
+</div></section>
+""")
+
+print("built:", ", ".join(f for f, _ in NAV))

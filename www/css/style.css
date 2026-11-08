@@ -139,7 +139,7 @@ textarea.input { resize: vertical; }
 .vp { margin: 12px 0; }
 .vp-stage { background: #0b1f1e; border-radius: var(--radius); overflow: hidden; aspect-ratio: 16 / 9; display: grid; place-items: center; color: #cfe; }
 .vp-stage video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-.vp-stage.missing { background: repeating-linear-gradient(45deg, #eaf2f2, #eaf2f2 12px, #e1ecec 12px, #e1ecec 24px); color: var(--text); border: 3px dashed #86aeae; }
+.vp-stage.missing { aspect-ratio: auto; min-height: 150px; background: repeating-linear-gradient(45deg, #eaf2f2, #eaf2f2 12px, #e1ecec 12px, #e1ecec 24px); color: var(--text); border: 3px dashed #86aeae; }
 .vp-missing { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 12px; font-size: .95rem; }
 .vp-missing .big { font-size: 2.4rem; }
 .vp-msg { color: #cfe; }

@@ -1,4 +1,5 @@
-# ينشر مجلد www كموقع ثابت على GitHub Pages (وضع محلي: بدون خادم المقابلات)
+# ينشر الموقع التعريفي (site/) على الجذر، والتطبيق (www/) تحت /app/ على GitHub Pages.
+# ملاحظة: Pages يعمل بالوضع المحلي فقط (بدون خادم المقابلات).
 name: Deploy site
 on:
   push: { branches: [main] }
@@ -11,8 +12,14 @@ jobs:
     environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
     steps:
       - uses: actions/checkout@v4
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          cp -r www _site/app
+          touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
-        with: { path: www }
+        with: { path: _site }
       - id: d
         uses: actions/deploy-pages@v4

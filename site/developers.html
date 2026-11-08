@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<meta name="description" content="تشغيل خادم طبيبي يفهمني، إضافة الفيديوهات، وتحويل التطبيق إلى APK.">
+<title>للمطورين والمستشفيات – طبيبي يفهمني</title>
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+<header class="top"><div class="wrap">
+  <a class="brand" href="index.html"><img src="img/icon.svg" alt="">طبيبي يفهمني</a>
+  <nav class="nav" aria-label="صفحات الموقع"><a href="index.html">الرئيسية</a><a href="features.html">المميزات</a><a href="how.html">كيف يعمل</a><a href="privacy.html">الخصوصية والأمان</a><a href="developers.html" aria-current="page">للمطورين والمستشفيات</a></nav>
+  <a class="cta primary" href="app/">افتح التطبيق</a>
+</div></header>
+<main id="main">
+
+<div class="page-head"><div class="wrap"><h1>للمطورين والمستشفيات</h1><p class="lead">المشروع مفتوح للتطوير. الكود على <a href="https://github.com/omaralaaeldin44-afk/tabiby">GitHub</a>.</p></div></div>
+
+<section><div class="wrap">
+  <h2>تشغيل خادم المستشفى</h2>
+  <p>الخادم لا يحتاج مكتبات خارجية. يكفي Node.js 18 أو أحدث:</p>
+<pre><code>git clone https://github.com/omaralaaeldin44-afk/tabiby
+cd tabiby
+npm start   # http://localhost:3000</code></pre>
+  <p>افتح العنوان من هواتف المرضى والأطباء على نفس الشبكة، أو اكتبه في «الإعدادات» داخل التطبيق.</p>
+  <p>إضافة حساب حقيقي (يعطّل الحسابات التجريبية):</p>
+<pre><code>npm run add-staff -- dr.ahmed doctor "كلمة-مرور-قوية" "د. أحمد"</code></pre>
+</div></section>
+
+<section class="alt" id="signers"><div class="wrap">
+  <h2>🤟 إضافة فيديوهات لغة الإشارة</h2>
+  <p>نحتاج فيديوهات حقيقية لشخص يؤدي لغة الإشارة <strong>المصرية</strong>، يراجعها مختص. طريقتان للإضافة:</p>
+  <ol class="steps">
+    <li><strong>داخل التطبيق قبل البناء</strong><p>ضع الملف في <code>www/videos/</code> باسم معرّف الجملة، مثل <code>p1.mp4</code> لجملة «أين تشعر بالألم؟». المعرّفات ظاهرة في لوحة الإدارة.</p></li>
+    <li><strong>من لوحة الإدارة</strong><p>ارفع الفيديو من الهاتف مباشرة. يُحفظ على ذلك الجهاز.</p></li>
+  </ol>
+  <p class="lead">نصيحة للتصوير: خلفية سادة، إضاءة أمامية، يظهر الوجه واليدان كاملين، ومدة قصيرة لكل جملة.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>📱 تحويل التطبيق إلى APK</h2>
+  <p>المشروع مجهّز بـ Capacitor. يحتاج JDK 17 وAndroid SDK:</p>
+<pre><code>npm install
+npx cap add android
+npm run apk:debug
+# الناتج: android/app/build/outputs/apk/debug/app-debug.apk</code></pre>
+  <p>أو افتح المشروع في Android Studio بالأمر <code>npm run cap:open</code> وابنِ من هناك.</p>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>🗺️ ما يحتاج تطويرًا</h2>
+  <ul class="check">
+    <li>تصوير فيديوهات الإشارة المصرية ومراجعتها.</li>
+    <li>مزامنة مركزية للمحتوى بين الأجهزة (حاليًا تصدير/استيراد ملف).</li>
+    <li>ربط تنبيه المساعدة بنظام الاستدعاء في المستشفى.</li>
+    <li>تخزين دائم للمقابلات إن احتاجته المستشفى، مع سياسة حذف واضحة.</li>
+    <li>اختبار مع مرضى صم حقيقيين ومراجعة سهولة الاستخدام.</li>
+  </ul>
+</div></section>
+
+</main>
+<footer><div class="wrap">
+  <div><strong>طبيبي يفهمني – Tabibi Yefhamni</strong><br>وسيلة مساعدة على التواصل فقط. لا يقدّم تشخيصًا ولا علاجًا ولا جرعات دوائية، ولا يغني عن مترجم لغة الإشارة.</div>
+  <div><a href="app/">التطبيق</a> · <a href="privacy.html">الخصوصية</a> · <a href="https://github.com/omaralaaeldin44-afk/tabiby">الكود على GitHub</a></div>
+</div></footer>
+</body>
+</html>
