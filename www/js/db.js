@@ -1,5 +1,5 @@
 // المحتوى (localStorage) + الوسائط المحلية (IndexedDB) + تحديد مصدر الفيديو.
-import { seedContent } from './seed.js';
+import { seedContent, OLD_ICONS } from './seed.js';
 import { ls } from './state.js';
 
 const KEY = 'tby_content_v1';
@@ -13,6 +13,16 @@ export function content() {
     cache = saved && saved.signs ? saved : seedContent();
     cache.campaigns ??= [];
     cache.settings ??= { contactEmail: '' };
+    if ((cache.picsVersion || 0) < 1) {
+      const seed = seedContent();
+      const swap = (list, seedList, key = x => x.id) => list.forEach(x => {
+        const fresh = seedList.find(y => y.id === x.id);
+        const old = OLD_ICONS[x.id === 'allergy' && list === cache.symptoms ? 'allergy_s' : key(x)];
+        if (fresh && x.icon === old) x.icon = fresh.icon;
+      });
+      swap(cache.categories, seed.categories); swap(cache.symptoms, seed.symptoms);
+      cache.picsVersion = 1; saveContent();
+    }
   }
   return cache;
 }

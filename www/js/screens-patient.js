@@ -1,10 +1,10 @@
 // شاشات المريض: الرئيسية، الأعراض بالصور، مكان الألم، المقابلة.
-import { h, go, toast, iconEl, badge, bodySVG, modal, confirmBox, videoPlayer } from './ui.js';
+import { h, go, toast, iconEl, badge, bodySVG, modal, confirmBox, videoPlayer, pic } from './ui.js';
 import { content, byId } from './db.js';
 import { Patient, urgentReason } from './state.js';
 import { Rooms, Net, subscribe } from './rooms.js';
 import { BODY_PARTS, SEVERITY } from './seed.js';
-import { tile, netBadge } from './screens-public.js';
+import { tile, picTile, netBadge } from './screens-public.js';
 import { Direct, patientLinkFlow } from './direct.js';
 
 const sevClass = ['', 'mild', 'mid', 'high'];
@@ -20,7 +20,7 @@ export function urgentBanner(app) {
 
 const sevButtons = (current, onPick) => h('div', { class: 'sev-row', role: 'group', 'aria-label': 'الشدة' },
   [1, 2, 3].map(n => h('button', { class: `sev ${sevClass[n]}`, type: 'button', 'aria-pressed': current === n, onclick: () => onPick(n) },
-    h('span', { 'aria-hidden': 'true' }, ['', '🙂', '😟', '😣'][n]), SEVERITY[n])));
+    pic(['', 'slightly-smiling-face', 'worried-face', 'tired-face'][n], 'sev-pic'), h('span', {}, SEVERITY[n]))));
 
 /* ---------- لوحة المريض ---------- */
 export function patientHub(_, app) {
@@ -31,13 +31,14 @@ export function patientHub(_, app) {
     const syms = Object.entries(s.symptoms).map(([id, v]) => ({ sym: byId(c.symptoms, id), v })).filter(x => x.sym);
     root.replaceChildren(
       urgentBanner(app),
-      h('div', { class: 'tiles' },
-        tile({ icon: 'image', title: 'الأعراض بالصور', sub: 'اختر ما تشعر به', cls: 'primary', href: '/symptoms' }),
-        tile({ icon: 'map-pin', title: 'مكان الألم وشدته', sub: 'اضغط على صورة الجسم', cls: 'amber', href: '/pain' }),
-        tile({ icon: 'message-square', title: 'المقابلة ورسالة للطبيب', sub: 'اقرأ الأسئلة وأجب واكتب رسالتك', cls: 'blue', href: '/visit' }),
-        tile({ icon: 'video', title: 'فيديو شكوى بالإشارة', sub: 'مترجم متفرغ يترجم شكواك للطبيب', href: '/complaint' }),
-        tile({ icon: 'calendar-clock', title: 'موعد عيادة ومترجم', sub: 'اطلب مترجمًا يرافقك', cls: 'amber', href: '/appointment' }),
-        tile({ icon: 'hand', title: 'فيديوهات لغة الإشارة', sub: 'تعلّم الجمل المهمة', href: '/signs' })),
+      h('div', { class: 'pgrid' },
+        picTile({ pic: 'face-with-thermometer', title: 'الأعراض بالصور', sub: 'اختر ما تشعر به', href: '/symptoms', tone: 'amber' }),
+        picTile({ pic: 'round-pushpin', title: 'مكان الألم', sub: 'على صورة الجسم', href: '/pain', tone: 'rose' }),
+        picTile({ pic: 'speech-balloon', title: 'المقابلة والرسائل', sub: 'أسئلة الطبيب وإجاباتي', href: '/visit', tone: 'blue', wide: true }),
+        picTile({ pic: 'video-camera', title: 'شكوى بالإشارة', sub: 'فيديو يترجمه مترجم', href: '/complaint', tone: 'teal' }),
+        picTile({ pic: 'spiral-calendar', title: 'موعد ومترجم', sub: 'مترجم يرافقك', href: '/appointment', tone: 'amber' }),
+        picTile({ pic: 'person-deaf', title: 'فيديوهات الإشارة', sub: 'جمل مهمة', href: '/signs', tone: 'teal' }),
+        picTile({ pic: 'memo', title: 'طلباتي', sub: 'ردود المترجمين', href: '/requests', tone: 'gray' })),
       h('div', { class: 'card' }, h('h2', {}, 'ما اخترته'),
         (!syms.length && !s.pains.length) ? h('p', { class: 'note' }, 'لم تختر شيئًا بعد.') : h('div', { class: 'chips' },
           syms.map(({ sym, v }) => h('span', { class: 'chip ' + sevClass[v.severity] }, sym.name, v.severity ? ' — ' + SEVERITY[v.severity] : ' — حدّد الشدة')),
@@ -159,6 +160,16 @@ export function renderThread(room, { who, onAnswer }) {
   return box;
 }
 
+// صورة لكل إجابة معروفة، حتى يفهمها المريض دون قراءة.
+const ANSWER_PICS = { 'نعم': 'check-mark-button', 'لا': 'cross-mark-button', 'لا أعرف': 'thinking-face',
+  'خفيف': 'slightly-smiling-face', 'متوسط': 'worried-face', 'شديد': 'tired-face', 'مكان آخر': 'red-question-mark',
+  'حاضر': 'check-mark-button', 'لا أستطيع': 'cross-mark-button', 'اليوم': 'spiral-calendar', 'مستمر': 'tired-face', 'يأتي ويذهب': 'worried-face' };
+const ANSWER_BODY = { 'الرأس': 'head', 'الصدر': 'chest', 'البطن': 'abdomen', 'اليد': 'armR', 'الرجل': 'legR' };
+function answerPicture(o) {
+  if (ANSWER_BODY[o]) return h('span', { class: 'ans-body', 'aria-hidden': 'true', html: bodySVG({ active: [ANSWER_BODY[o]] }) });
+  return ANSWER_PICS[o] ? pic(ANSWER_PICS[o], 'ans-pic') : null;
+}
+
 function answerWidget(q, onAnswer) {
   const wrap = h('div', { class: 'answers' });
   const send = v => { wrap.querySelectorAll('button').forEach(b => (b.disabled = true)); onAnswer(q, v).catch(() => wrap.querySelectorAll('button').forEach(b => (b.disabled = false))); };
@@ -168,7 +179,8 @@ function answerWidget(q, onAnswer) {
   } else {
     const opts = q.answerType === 'choices' && q.choices?.length ? q.choices : ['نعم', 'لا', 'لا أعرف'];
     wrap.classList.add(q.answerType === 'yesno' ? 'yn' : 'ch');
-    opts.forEach(o => wrap.append(h('button', { class: 'btn ans ' + (o === 'نعم' ? 'yes' : o === 'لا' ? 'no' : 'secondary'), type: 'button', onclick: () => send(o) }, o)));
+    opts.forEach(o => wrap.append(h('button', { class: 'btn ans ' + (o === 'نعم' ? 'yes' : o === 'لا' ? 'no' : 'secondary'), type: 'button', onclick: () => send(o) },
+      answerPicture(o), h('span', {}, o))));
   }
   return wrap;
 }

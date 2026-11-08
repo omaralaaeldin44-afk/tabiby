@@ -148,8 +148,8 @@ textarea.input { resize: vertical; }
 .row-icon .icon { font-size: 2rem; } .row-icon svg { height: 44px; }
 .img-icon { width: 78px; height: 78px; object-fit: contain; }
 .row-icon .img-icon { width: 44px; height: 44px; }
-.body-icon .part, .bodymap .part { fill: #dfe9e6; stroke: var(--primary); stroke-width: 3; }
-.body-icon .part.on, .bodymap .part.on { fill: #e0574f; stroke: #7f1d18; }
+.body-icon .part, .bodymap .part, .ans-body .part { fill: #dfe9e6; stroke: var(--primary); stroke-width: 3; }
+.body-icon .part.on, .bodymap .part.on, .ans-body .part.on { fill: #e0574f; stroke: #7f1d18; }
 .bodymap { max-width: 250px; margin: 8px auto; }
 .bodymap svg { width: 100%; height: auto; }
 .bodymap .part { cursor: pointer; }
@@ -261,3 +261,98 @@ body.no-nav .fab { bottom: max(12px, env(safe-area-inset-bottom)); }
 @media (prefers-reduced-motion: reduce) { .flash, .big-show.danger.flash { animation: none; } }
 @media (max-width: 380px) { :root { font-size: 17px; } .answers.yn { grid-template-columns: 1fr; } }
 .card.urgent-card { border: 2px solid var(--danger); }
+
+/* ================= الصور (Fluent Emoji) ================= */
+.pic { display: block; width: 48px; height: 48px; object-fit: contain; user-select: none; -webkit-user-drag: none; flex: none; }
+.tone-teal { --t-bg: #e3f0ec; --t-ring: #b9d8cf; }
+.tone-amber { --t-bg: #fdf1dc; --t-ring: #f0d29c; }
+.tone-blue { --t-bg: #e3edf8; --t-ring: #b8cfe8; }
+.tone-rose { --t-bg: #fbe6e4; --t-ring: #efbcb7; }
+.tone-gray { --t-bg: #efede7; --t-ring: #d9d5ca; }
+
+/* شبكة البطاقات بالصور */
+.pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 10px 0 16px; }
+@media (min-width: 620px) { .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ptile { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; text-align: center; padding: 16px 10px 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 24px; color: var(--text); text-decoration: none; font: inherit; cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 6px 16px -10px rgba(30,60,55,.25); transition: transform .12s ease, box-shadow .12s ease; min-height: 168px; }
+.ptile:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -12px rgba(30,60,55,.35); }
+.ptile:active { transform: scale(.98); }
+.ptile.wide { grid-column: 1 / -1; flex-direction: row; text-align: start; min-height: 0; padding: 14px 16px; background: var(--primary); border-color: var(--primary); color: #fff; }
+.ptile.wide .ptile-text small { color: #d6e7e3; }
+.ptile.wide .ptile-pic { background: rgba(255,255,255,.16); box-shadow: none; width: 84px; height: 84px; }
+.ptile-pic { width: 92px; height: 92px; border-radius: 28px; display: grid; place-items: center; background: var(--t-bg, var(--primary-soft)); box-shadow: inset 0 0 0 2px var(--t-ring, transparent); flex: none; }
+.ptile-pic .pic, .ptile-pic .icon { width: 62px; height: 62px; font-size: 2.6rem; }
+.ptile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ptile-text strong { font-size: 1.05rem; line-height: 1.45; }
+.ptile-text small { color: var(--muted); font-size: .8rem; line-height: 1.45; }
+
+/* البطاقة الرئيسية */
+.hero { background: linear-gradient(160deg, #ffffff 0%, #f1f7f5 100%); position: relative; overflow: hidden; }
+.hero-art { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin: 2px 0 14px; }
+.hero-art .pic { width: 92px; height: 92px; filter: drop-shadow(0 6px 10px rgba(30,60,55,.18)); }
+.hero-art .ha-b { width: 64px; height: 64px; margin-bottom: 40px; }
+.big-cta { min-height: 64px; font-size: 1.15rem; }
+.btn-pic { width: 34px; height: 34px; }
+.btn-pic.big { width: 56px; height: 56px; }
+.help-card { padding: 14px 16px; box-shadow: 0 8px 20px -14px rgba(179,38,30,.6); }
+.help-pic { width: 64px; height: 64px; }
+.info-pic { width: 40px; height: 40px; }
+.page-art { display: flex; justify-content: center; gap: 14px; margin: 4px 0 8px; }
+.page-art .pic { width: 70px; height: 70px; filter: drop-shadow(0 4px 8px rgba(30,60,55,.15)); }
+.empty-pic { width: 96px; height: 96px; margin: 8px auto; opacity: .9; }
+
+/* خطوات بالصور */
+.pic-steps li { flex-direction: row; align-items: center; gap: 14px; }
+.step-pic { width: 60px; height: 60px; background: var(--primary-soft); border-radius: 18px; padding: 8px; }
+
+/* الأعراض */
+.sym-main .pic.icon { width: 88px; height: 88px; }
+.sym-main { min-height: 150px; }
+.sev { flex-direction: column; gap: 2px; min-height: 84px; }
+.sym .sev { flex-direction: row; min-height: 58px; }
+.sev-pic { width: 40px; height: 40px; }
+.sym .sev-pic { width: 34px; height: 34px; }
+.sym-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+@media (min-width: 520px) { .sym-chips { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.sym-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border: 2px solid var(--line); border-radius: 18px; background: #fff; font: inherit; font-weight: 700; font-size: .88rem; cursor: pointer; color: var(--text); }
+.sym-chip .pic { width: 52px; height: 52px; }
+.sym-chip[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+.chip-pic { width: 22px; height: 22px; }
+.req-pic { width: 46px; height: 46px; }
+.rec-pic { width: 110px; height: 110px; margin: 0 auto 6px; }
+
+/* الإجابات بالصور */
+.btn.ans { flex-direction: column; gap: 6px; min-height: 120px; font-size: 1.2rem; border-radius: 20px; padding: 12px 6px; }
+.btn.ans.secondary { background: #fff; border: 2px solid var(--line); color: var(--text); }
+.btn.ans.yes { background: #e6f3ea; color: #0f4d22; border: 2px solid #7fc296; }
+.btn.ans.no { background: #fbeceb; color: #7f1d18; border: 2px solid #e59a95; }
+.ans-pic { width: 60px; height: 60px; }
+.ans-body svg { height: 74px; width: auto; display: block; }
+.answers.ch .btn.ans { min-height: 128px; }
+
+/* الحملات */
+.camp-head { display: flex; align-items: center; gap: 12px; }
+.camp-pic { width: 56px; height: 56px; background: var(--primary-soft); border-radius: 18px; padding: 8px; }
+
+/* نص كبير */
+.big-pic { width: 120px; height: 120px; margin: 4px auto 6px; }
+.big-show.danger .big-pic { background: #fff; border-radius: 30px; padding: 10px; }
+
+/* ================= مشغّل فيديو أوضح ================= */
+.vp-stage { position: relative; aspect-ratio: 4 / 3; border-radius: 24px; box-shadow: 0 10px 24px -14px rgba(0,0,0,.5); }
+.vp-stage video { object-fit: contain; }
+.vp-stage:fullscreen, .vp-stage:-webkit-full-screen { border-radius: 0; aspect-ratio: auto; width: 100vw; height: 100vh; }
+.vp-big-play { position: absolute; inset: 0; margin: auto; width: 92px; height: 92px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); color: var(--primary); font-size: 2.4rem; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.35); padding-inline-start: 8px; }
+.vp-big-play[hidden] { display: none; }
+.vp-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.vp-controls progress { grid-column: 1 / -1; height: 14px; width: 100%; }
+.vp-btn { min-height: 56px; border-radius: 16px; border: 1.5px solid var(--line); background: #fff; font: inherit; font-weight: 700; font-size: 1rem; color: var(--text); cursor: pointer; }
+.vp-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); grid-column: 1 / -1; min-height: 62px; font-size: 1.15rem; }
+.vp-btn.ghost { grid-column: 1 / -1; color: var(--primary); }
+.vp-btn[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); }
+.vp-cap { font-size: 1.6rem; padding: 14px; border: 2px solid var(--primary-soft); background: #fff; }
+.vp-stage.missing { aspect-ratio: auto; min-height: 210px; background: linear-gradient(160deg, #f4f8f6, #e7f0ed); border: 2px dashed #9ec2bb; }
+.vp-missing-pic { width: 96px; height: 96px; opacity: .55; filter: grayscale(.4); margin-bottom: 4px; }
+.vp-missing strong { font-size: 1.1rem; }
+.sym-main .body-icon svg { height: 92px; }

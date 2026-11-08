@@ -26,6 +26,9 @@ Element.prototype.replaceChildren = function (...kids) {
 
 export const go = path => { location.hash = '#' + path; };
 
+/** صورة توضيحية ملوّنة (Fluent Emoji — MIT) محفوظة داخل التطبيق. */
+export const pic = (name, cls = '', alt = '') => h('img', { class: 'pic ' + cls, src: 'img/pics/' + name + '.svg', alt, 'aria-hidden': alt ? null : 'true', draggable: 'false', loading: 'lazy' });
+
 export function toast(msg, type = 'info', ms = 4500) {
   const t = h('div', { class: 'toast ' + type, role: type === 'error' ? 'alert' : 'status' }, msg);
   document.getElementById('toasts').append(t);
@@ -82,6 +85,7 @@ export function bodySVG({ active = [], interactive = false, label = 'جسم ال
 /** أيقونة عنصر: إيموجي، أو body:<جزء>، أو صورة محفوظة img:<id>. */
 export function iconEl(icon, cls = '') {
   icon = icon || '❔';
+  if (icon.startsWith('pic:')) return pic(icon.slice(4), 'icon ' + cls);
   if (icon.startsWith('body:')) return h('span', { class: 'icon body-icon ' + cls, 'aria-hidden': 'true', html: bodySVG({ active: [icon.slice(5)] }) });
   if (icon.startsWith('img:')) {
     const u = Media.urls.get(icon);
@@ -103,46 +107,56 @@ export function videoBadge(sign) {
 }
 
 /* ---------- مشغّل فيديو لغة الإشارة ---------- */
-export function videoPlayer(sign) {
+const SPEEDS = [1, 0.75, 0.5];
+export function videoPlayer(sign, { autoplay = false } = {}) {
   const stage = h('div', { class: 'vp-stage' }, h('p', { class: 'vp-msg' }, 'جارٍ التحقق من الفيديو…'));
   const controls = h('div', { class: 'vp-controls' });
   const wrap = h('div', { class: 'vp' }, stage, controls, h('p', { class: 'vp-cap', dir: 'auto' }, sign.text));
+  const btn = (label, cls, onclick, extra = {}) => h('button', { class: 'vp-btn ' + cls, type: 'button', onclick, ...extra }, label);
 
   const missing = () => {
     stage.className = 'vp-stage missing';
     stage.replaceChildren(h('div', { class: 'vp-missing' },
-      h('div', { class: 'big', 'aria-hidden': 'true' }, '🎬'),
+      pic('person-deaf', 'vp-missing-pic'),
       h('strong', {}, 'الفيديو غير متوفر حاليًا'),
-      h('span', {}, 'اقرأ النص المكتوب أدناه. يمكن إضافة الفيديو لاحقًا من لوحة إدارة المحتوى.')));
+      h('span', {}, 'اقرأ الجملة المكتوبة بالأسفل. سيُضاف فيديو حقيقي بلغة الإشارة المصرية لاحقًا.')));
     controls.replaceChildren();
   };
 
   videoSource(sign).then(src => {
     if (!src) return missing();
     stage.replaceChildren();
-    const v = h('video', { playsinline: true, preload: 'metadata', src: src.src, 'aria-label': 'فيديو لغة الإشارة المصرية: ' + sign.text });
-    v.muted = true; // لا اعتماد على الصوت
+    const v = h('video', { playsinline: true, preload: 'auto', src: src.src, 'aria-label': 'فيديو لغة الإشارة المصرية: ' + sign.text });
+    v.muted = true; v.loop = true; // لا اعتماد على الصوت، والتكرار يساعد على المتابعة
+    const bigPlay = h('button', { class: 'vp-big-play', type: 'button', 'aria-label': 'تشغيل' }, '▶');
     const prog = h('progress', { max: '1', value: '0', 'aria-label': 'تقدم الفيديو' });
-    const play = h('button', { class: 'btn primary', type: 'button' }, '▶ تشغيل');
-    const replay = h('button', { class: 'btn secondary', type: 'button' }, '↻ إعادة');
-    const slow = h('button', { class: 'btn ghost', type: 'button', 'aria-pressed': 'false' }, '🐢 أبطأ');
-    play.onclick = () => (v.paused ? v.play() : v.pause());
-    replay.onclick = () => { v.currentTime = 0; v.play(); };
-    slow.onclick = () => { const on = v.playbackRate !== 0.5; v.playbackRate = on ? 0.5 : 1; slow.setAttribute('aria-pressed', on); slow.textContent = on ? '🐇 عادي' : '🐢 أبطأ'; };
-    v.onplay = () => (play.textContent = '⏸ إيقاف');
-    v.onpause = () => (play.textContent = v.ended ? '▶ شاهد مرة أخرى' : '▶ تشغيل');
-    v.onended = () => (play.textContent = '▶ شاهد مرة أخرى');
+    let si = 0;
+    const play = btn('▶ تشغيل', 'primary', () => (v.paused ? v.play() : v.pause()));
+    const replay = btn('↻ من البداية', '', () => { v.currentTime = 0; v.play(); });
+    const speed = btn('السرعة: عادية', '', () => {
+      si = (si + 1) % SPEEDS.length; v.playbackRate = SPEEDS[si];
+      speed.textContent = 'السرعة: ' + ['عادية', 'أبطأ', 'بطيئة جدًا'][si];
+    });
+    const loop = btn('🔁 تكرار: يعمل', '', () => { v.loop = !v.loop; loop.textContent = '🔁 تكرار: ' + (v.loop ? 'يعمل' : 'متوقف'); loop.setAttribute('aria-pressed', v.loop); }, { 'aria-pressed': 'true' });
+    const full = btn('⛶ ملء الشاشة', '', () => {
+      const el = stage;
+      (el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || v.webkitEnterFullscreen?.());
+    });
+    bigPlay.onclick = () => v.play();
+    v.onclick = () => (v.paused ? v.play() : v.pause());
+    v.onplay = () => { play.textContent = '⏸ إيقاف'; bigPlay.hidden = true; };
+    v.onpause = () => { play.textContent = '▶ تشغيل'; bigPlay.hidden = false; };
     v.ontimeupdate = () => { prog.value = v.duration ? v.currentTime / v.duration : 0; };
     v.onerror = missing;
-    stage.append(v);
-    controls.append(play, replay, slow, prog);
+    stage.append(v, bigPlay);
+    controls.append(play, replay, speed, loop, full, prog);
+    if (autoplay) v.play().catch(() => {});
     if (src.kind === 'remote' && !/^https?:/i.test(src.src)) {
-      const dl = h('button', { class: 'btn ghost', type: 'button' }, '⬇ حفظ للعمل دون إنترنت');
-      dl.onclick = async () => {
+      const dl = btn('⬇ حفظ للعمل دون إنترنت', 'ghost', async () => {
         dl.disabled = true;
         try { await downloadVideo(sign); dl.replaceWith(badge('✓ تم الحفظ على هذا الهاتف', 'ok')); }
         catch (e) { dl.disabled = false; toast(e.message || 'تعذّر الحفظ', 'error'); }
-      };
+      });
       controls.append(dl);
     }
   });
@@ -150,8 +164,8 @@ export function videoPlayer(sign) {
 }
 
 /** عرض نص كبير ملء الشاشة (للإظهار لشخص آخر) مع الفيديو إن وجد. */
-export function showBig({ text, sign, danger = false }) {
+export function showBig({ text, sign, danger = false, image }) {
   const body = h('div', { class: 'big-show' + (danger ? ' danger' : '') },
-    h('p', { class: 'big-text', dir: 'auto' }, text), sign && videoPlayer(sign));
+    image && pic(image, 'big-pic'), h('p', { class: 'big-text', dir: 'auto' }, text), sign && videoPlayer(sign));
   return modal({ body, actions: [{ label: 'إغلاق', cls: 'primary' }], wide: true });
 }

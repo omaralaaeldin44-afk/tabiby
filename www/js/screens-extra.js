@@ -1,5 +1,5 @@
 // الأقسام المنقولة: فيديو شكوى بالإشارة، موعد مع مترجم، طلباتي، الحملات، عن التطبيق، اتصل بنا، بوابة المترجمين.
-import { h, go, toast, badge, confirmBox, videoPlayer, showBig } from './ui.js';
+import { h, go, toast, badge, confirmBox, videoPlayer, showBig, pic } from './ui.js';
 import { content, byId } from './db.js';
 import { Net, subscribe } from './rooms.js';
 import { Session } from './state.js';
@@ -9,6 +9,9 @@ import { icon } from './icons.js';
 import { ic, footLinks } from './screens-public.js';
 
 const MAX_SEC = 90, MAX_BYTES = 60e6;
+const SYM_PICS = { 'الصداع': 'face-with-head-bandage', 'ألم البطن': 'persevering-face', 'ألم الصدر': 'anatomical-heart', 'الدوخة': 'face-with-spiral-eyes',
+  'الحرارة': 'face-with-thermometer', 'الغثيان': 'nauseated-face', 'الحساسية': 'sneezing-face', 'صعوبة التنفس': 'lungs' };
+const CAMP_PICS = { vaccination: 'syringe', awareness: 'light-bulb', announcement: 'loudspeaker' };
 const fmtDate = t => new Date(t).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
 const field = (label, el, hint) => h('label', { class: 'field' }, label, el, hint && h('small', {}, hint));
 const input = (attrs = {}) => h('input', { class: 'input', ...attrs });
@@ -21,7 +24,7 @@ const modeNote = what => Net.mode === 'server'
 /* ---------- فيديو شكوى بالإشارة ---------- */
 export function complaint(_, app) {
   let stream = null, recorder = null, chunks = [], blob = null, timer = null, startedAt = 0;
-  const stage = h('div', { class: 'rec-stage' }, h('div', {}, h('span', { html: icon('camera') }), h('p', {}, 'سجّل فيديو قصيرًا تشرح فيه ما تشعر به بلغة الإشارة')));
+  const stage = h('div', { class: 'rec-stage' }, h('div', {}, pic('person-deaf', 'rec-pic'), h('p', {}, 'سجّل فيديو قصيرًا تشرح فيه ما تشعر به بلغة الإشارة')));
   const camBtn = h('button', { class: 'btn primary block', type: 'button' }, ic('camera'), 'تشغيل الكاميرا');
   const fileIn = h('input', { type: 'file', accept: 'video/*' });
   const fileBtn = h('label', { class: 'file-btn' }, ic('upload'), 'أو اختر فيديو من جهازك', fileIn);
@@ -68,8 +71,8 @@ export function complaint(_, app) {
   };
 
   const chosen = new Set();
-  const chips = h('div', { class: 'chips' }, COMPLAINT_SYMPTOMS.map(n => {
-    const b = h('button', { class: 'chip btn-chip', type: 'button', 'aria-pressed': 'false' }, n);
+  const chips = h('div', { class: 'sym-chips' }, COMPLAINT_SYMPTOMS.map(n => {
+    const b = h('button', { class: 'sym-chip', type: 'button', 'aria-pressed': 'false' }, pic(SYM_PICS[n]), h('span', {}, n));
     b.onclick = () => { chosen.has(n) ? chosen.delete(n) : chosen.add(n); b.setAttribute('aria-pressed', chosen.has(n)); urgentBox.replaceChildren(urgentHint()); };
     return b;
   }));
@@ -144,7 +147,7 @@ export function appointment() {
   };
   return {
     title: 'موعد عيادة مع مترجم', sub: 'أبلغنا بموعدك، ونجهّز لك مترجم إشارة يكون معك في العيادة.',
-    el: h('div', {}, modeNote('طلب الموعد'),
+    el: h('div', {}, h('div', { class: 'page-art' }, pic('spiral-calendar'), pic('handshake'), pic('hospital')), modeNote('طلب الموعد'),
       h('div', { class: 'card' }, h('h2', {}, 'بيانات الموعد'),
         field('اسم العيادة أو المستشفى *', clinic),
         h('div', { class: 'btn-row' }, h('div', { style: 'flex:1;min-width:150px' }, field('تاريخ الموعد *', date)), h('div', { style: 'flex:1;min-width:120px' }, field('الساعة *', time))),
@@ -162,14 +165,14 @@ export function requestsPage() {
   const card = ({ ref, r, err }) => {
     const isC = ref.kind === 'complaint';
     const head = h('div', { class: 'row-actions', style: 'align-items:center' },
-      h('span', { class: 'tile-icon', html: icon(isC ? 'video' : 'calendar-clock') }),
+      pic(isC ? 'video-camera' : 'spiral-calendar', 'req-pic'),
       h('span', { class: 'row-main' }, h('strong', {}, isC ? 'فيديو شكوى بالإشارة' : 'موعد عيادة مع مترجم'), h('small', {}, fmtDate(ref.createdAt))),
       r ? (ref.mode === 'local' ? badge('على هذا الهاتف فقط', 'warn') : statusBadge(r)) : badge(err === 404 ? 'حُذف أو انتهت مدته' : 'تعذّر التحميل', err === 404 ? 'warn' : 'no'));
     const body = h('div');
     if (r) {
       if (ref.mode === 'local') body.append(h('p', { class: 'note' }, 'محفوظ على هذا الهاتف فقط — لم يُرسل إلى مترجم.'));
       if (!isC) body.append(h('dl', { class: 'kv' }, h('dt', {}, 'العيادة'), h('dd', {}, r.clinic), h('dt', {}, 'الموعد'), h('dd', { dir: 'ltr', style: 'text-align:right' }, `${r.date} ${r.time}`), r.doctor && [h('dt', {}, 'الطبيب'), h('dd', {}, r.doctor)]));
-      if (isC && r.symptoms?.length) body.append(h('div', { class: 'chips' }, r.symptoms.map(s => h('span', { class: 'chip' }, s))));
+      if (isC && r.symptoms?.length) body.append(h('div', { class: 'chips' }, r.symptoms.map(s => h('span', { class: 'chip' }, SYM_PICS[s] && pic(SYM_PICS[s], 'chip-pic'), s))));
       if (r.reply?.text) body.append(h('div', { class: 'reply-box' }, h('small', {}, isC ? 'ترجمة المترجم لشكواك' : 'رد المترجم'), h('p', {}, r.reply.text)));
       const actions = h('div', { class: 'row-actions' });
       if (isC && r.hasVideo) actions.append(h('button', { class: 'btn ghost', type: 'button', onclick: async e => {
@@ -186,7 +189,7 @@ export function requestsPage() {
     } }, ic('trash-2'), 'حذف');
     return h('div', { class: 'card' }, head, body, del);
   };
-  const draw = items => box.replaceChildren(...(items.length ? items.map(card) : [h('div', { class: 'empty' }, h('p', {}, 'لا توجد طلبات بعد.'),
+  const draw = items => box.replaceChildren(...(items.length ? items.map(card) : [h('div', { class: 'empty' }, pic('memo', 'empty-pic'), h('p', {}, 'لا توجد طلبات بعد.'),
     h('a', { class: 'btn primary', href: '#/complaint' }, ic('video'), 'سجّل شكوى بالإشارة'))]));
   const unsub = refs.length ? subscribe(load, items => items && draw(items), 6000) : (draw([]), null);
   return { title: 'طلباتي', sub: 'شكاوى الفيديو وطلبات المواعيد وردود المترجمين', cleanup: () => unsub?.(), el: box };
@@ -198,15 +201,15 @@ export function campaigns() {
   const tabs = h('div', { class: 'chips' }); const list = h('div');
   const draw = () => {
     tabs.replaceChildren(...[['', 'الكل'], ...Object.entries(CAMPAIGN_TYPES)].map(([k, l]) =>
-      h('button', { class: 'chip btn-chip', type: 'button', 'aria-pressed': filter === k, onclick: () => { filter = k; draw(); } }, l)));
+      h('button', { class: 'chip btn-chip', type: 'button', 'aria-pressed': filter === k, onclick: () => { filter = k; draw(); } }, k && pic(CAMP_PICS[k], 'chip-pic'), l)));
     const items = c.campaigns.filter(x => x.published && (!filter || x.type === filter));
     list.replaceChildren(...(items.length ? items.map(x => {
       const sign = byId(c.signs, x.signId);
-      return h('article', { class: 'camp' }, badge(CAMPAIGN_TYPES[x.type] || 'إعلان', x.type === 'vaccination' ? 'ok' : x.type === 'awareness' ? 'info' : 'warn'),
+      return h('article', { class: 'camp' }, h('div', { class: 'camp-head' }, pic(CAMP_PICS[x.type] || 'loudspeaker', 'camp-pic'), badge(CAMPAIGN_TYPES[x.type] || 'إعلان', x.type === 'vaccination' ? 'ok' : x.type === 'awareness' ? 'info' : 'warn')),
         h('h3', {}, x.title),
         (x.date || x.place) && h('div', { class: 'camp-meta' }, x.date && h('span', { html: icon('calendar') + ' ' + x.date.replace(/[<>&]/g, '') }), x.place && h('span', { html: icon('map-pin') + ' ' + x.place.replace(/[<>&]/g, '') })),
         h('p', {}, x.body), sign && videoPlayer(sign));
-    }) : [h('div', { class: 'empty' }, h('span', { html: icon('megaphone') }), h('p', {}, 'لا توجد حملات منشورة حاليًا.'), h('small', {}, 'ستظهر هنا حملات التطعيم والتوعية فور نشرها من لوحة المحتوى.'))]));
+    }) : [h('div', { class: 'empty' }, pic('megaphone', 'empty-pic'), h('p', {}, 'لا توجد حملات منشورة حاليًا.'), h('small', {}, 'ستظهر هنا حملات التطعيم والتوعية فور نشرها من لوحة المحتوى.'))]));
   };
   draw();
   return { title: 'الحملات والإشعارات', sub: 'حملات التطعيم والتوعية للصم، مع فيديو إشارة عند توفره.', el: h('div', {}, tabs, list) };
@@ -217,6 +220,7 @@ export function about() {
   return {
     title: 'عن التطبيق', sub: 'منصة تواصل طبي لخدمة الصم وضعاف السمع في مصر.',
     el: h('div', {},
+      h('div', { class: 'page-art' }, pic('person-deaf'), pic('speech-balloon'), pic('health-worker')),
       h('div', { class: 'card' },
         h('p', {}, '«طبيبي يفهمني» تطبيق تواصل طبي صُمّم لخدمة الصم وضعاف السمع في مصر. هدفه أن يستطيع المريض الأصم أن يشرح ما يشعر به أمام الطبيب أو الممرض دون أن يكون هناك مترجم إشارة حاضرًا.'),
         h('p', {}, 'يعتمد التطبيق على الصور والكتابة الكبيرة وفيديوهات لغة الإشارة بدلًا من الكلام. يختار المريض أعراضه من صور، ويحدد مكان الألم وشدته، ويكتب رسالة، أو يسجّل شكواه بلغة الإشارة ليترجمها مترجم متفرغ. ويطرح الطبيب أسئلته ويستقبل الإجابات في نفس المحادثة، ويمكن طلب مترجم يرافق المريض في موعد العيادة.'),
@@ -234,6 +238,7 @@ export function contact(_, app) {
   return {
     title: 'اتصل بنا', sub: 'أسئلة، ملاحظات، أو طلب مساعدة في استخدام التطبيق.',
     el: h('div', {},
+      h('div', { class: 'page-art' }, pic('e-mail'), pic('mobile-phone'), pic('ambulance')),
       h('div', { class: 'card' }, h('h2', {}, 'البريد الإلكتروني'),
         email ? [h('p', { class: 'note' }, 'أرسل رسالتك على البريد التالي. اكتب نوع جهازك ووصفًا قصيرًا للمشكلة إن وُجدت.'),
           h('a', { class: 'btn secondary block', href: 'mailto:' + encodeURIComponent(email).replace('%40', '@'), dir: 'ltr' }, ic('mail'), email)]
@@ -264,7 +269,7 @@ export function interpreterPortal({ tab = 'complaints' }) {
       h('div', { class: 'row-actions', style: 'align-items:center' },
         r.urgent && badge('⚠ مستعجل', 'no'), statusBadge(r), h('small', { class: 'note', style: 'margin:0' }, fmtDate(r.createdAt))),
       h('dl', { class: 'kv' }, r.firstName && [h('dt', {}, 'الاسم'), h('dd', {}, r.firstName)], r.clinic && [h('dt', {}, 'موجّه إلى'), h('dd', {}, r.clinic)], r.note && [h('dt', {}, 'ملاحظة'), h('dd', {}, r.note)]),
-      r.symptoms?.length > 0 && h('div', { class: 'chips' }, r.symptoms.map(x => h('span', { class: 'chip' }, x))),
+      r.symptoms?.length > 0 && h('div', { class: 'chips' }, r.symptoms.map(x => h('span', { class: 'chip' }, SYM_PICS[x] && pic(SYM_PICS[x], 'chip-pic'), x))),
       vid,
       r.reply ? h('div', { class: 'reply-box' }, h('small', {}, 'ترجمتك (' + r.reply.by + ')'), h('p', {}, r.reply.text))
         : [ta, h('button', { class: 'btn primary block', type: 'button', onclick: async e => {

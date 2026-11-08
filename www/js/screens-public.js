@@ -1,5 +1,5 @@
 // الشاشات العامة: الرئيسية، التعليمات، المساعدة، مكتبة الفيديو، الإعدادات.
-import { h, toast, iconEl, badge, videoBadge, videoPlayer, showBig, confirmBox } from './ui.js';
+import { h, toast, iconEl, badge, videoBadge, videoPlayer, showBig, confirmBox, pic } from './ui.js';
 import { content, byId, videoSource, downloadVideo, clearProbe } from './db.js';
 import { Net, detectServer } from './rooms.js';
 import { Settings, Patient } from './state.js';
@@ -13,6 +13,11 @@ export const tile = ({ icon: ico, title, sub, cls = '', href, onclick }) =>
     h('span', { class: 'tile-icon', 'aria-hidden': 'true', html: ICONS[ico] ? icon(ico) : null }, ICONS[ico] ? null : ico),
     h('span', { class: 'tile-text' }, h('strong', {}, title), sub && h('small', {}, sub)),
     h('span', { class: 'tile-go', html: icon('chevron-left') }));
+/** بطاقة بصورة كبيرة — الأساس في واجهة سهلة للصم. */
+export const picTile = ({ pic: p, title, sub, href, onclick, tone = 'teal', wide = false }) =>
+  h(href ? 'a' : 'button', { class: `ptile tone-${tone}${wide ? ' wide' : ''}`, href: href ? '#' + href : null, type: href ? null : 'button', onclick },
+    h('span', { class: 'ptile-pic' }, pic(p)),
+    h('span', { class: 'ptile-text' }, h('strong', {}, title), sub && h('small', {}, sub)));
 export const footLinks = () => h('nav', { class: 'foot-links', 'aria-label': 'روابط' },
   h('a', { href: '#/about' }, 'عن التطبيق'), h('a', { href: '#/contact' }, 'اتصل بنا'), h('a', { href: '#/howto' }, 'كيفية الاستخدام'));
 
@@ -30,29 +35,29 @@ export function home(_, app) {
     title: 'طبيبي يفهمني', sub: 'Tabibi Yefhamni · تواصل مع طبيبك بلغتك', home: true, noFab: true,
     el: h('div', {},
       h('div', { class: 'hero' },
+        h('div', { class: 'hero-art', 'aria-hidden': 'true' },
+          pic('person-deaf', 'ha-a'), pic('speech-balloon', 'ha-b'), pic('health-worker', 'ha-c')),
         h('p', { class: 'eyebrow' }, 'لمرضى الصم وضعاف السمع'),
-        h('h1', {}, 'عندما لا يوجد مترجم إشارة، أنت ما زلت قادرًا على شرح ما تشعر به.'),
-        h('p', { class: 'lead' }, 'اختر أعراضك بالصور، حدّد مكان الألم وشدته، واكتب رسالتك أو سجّل شكواك بالإشارة. يظهر كل ذلك للطبيب أو الممرض بالعربية، مع فيديو لغة الإشارة إن كان متوفرًا.'),
-        h('a', { class: 'btn primary block', href: '#/patient' }, ic('user'), 'ابدأ الآن كمريض'),
-        h('a', { class: 'btn secondary block', href: '#/howto' }, ic('book-open'), 'كيفية الاستخدام'),
+        h('h1', {}, 'اشرح لطبيبك ما تشعر به — بالصور والإشارة والكتابة.'),
+        h('p', { class: 'lead' }, 'اختر صورة العَرَض، وحدّد مكان الألم، أو سجّل شكواك بلغة الإشارة. يظهر كل شيء للطبيب بالعربية.'),
+        h('a', { class: 'btn primary block big-cta', href: '#/patient' }, pic('person-raising-hand', 'btn-pic'), 'ابدأ الآن كمريض'),
         h('div', {}, netBadge())),
       h('button', { class: 'help-card', type: 'button', onclick: () => app.helpNow() },
-        h('span', { class: 'tile-icon', html: icon('shield-alert') }),
-        h('span', {}, h('strong', {}, 'أحتاج مساعدة الآن'), h('small', {}, 'اعرض رسالة كبيرة للطبيب أو الممرض الموجود بجوارك'))),
-      h('h2', { class: 'section-title' }, 'الأقسام'),
-      h('div', { class: 'tiles' },
-        tile({ icon: 'user', title: 'أنا مريض', sub: 'أعراض، مكان الألم، ورسالة للطبيب', cls: 'primary', href: '/patient' }),
-        tile({ icon: 'stethoscope', title: 'أنا طبيب أو ممرض', sub: 'قراءة الحالة وطرح الأسئلة', cls: 'blue', href: '/login/staff' }),
-        tile({ icon: 'video', title: 'فيديو شكوى بالإشارة', sub: 'سجّل شكواك ومترجم متفرغ يترجمها للطبيب', href: '/complaint' }),
-        tile({ icon: 'calendar-clock', title: 'موعد عيادة ومترجم', sub: 'اطلب مترجمًا يكون معك في الموعد', cls: 'amber', href: '/appointment' }),
-        tile({ icon: 'megaphone', title: 'الحملات والإشعارات', sub: 'تطعيمات وتوعية بلغة الإشارة', cls: 'blue', href: '/campaigns' }),
-        tile({ icon: 'hand', title: 'فيديوهات لغة الإشارة', sub: 'مكتبة مرتبة حسب الموضوع', href: '/signs' }),
-        tile({ icon: 'image', title: 'الأعراض بالصور', sub: 'اختر العَرَض الذي تشعر به', cls: 'amber', href: '/symptoms' }),
-        tile({ icon: 'bell-ring', title: 'طلب المساعدة', sub: 'نبّه الطبيب أو الممرض', cls: 'danger', href: '/help' }),
-        tile({ icon: 'book-open', title: 'كيفية استخدام التطبيق', sub: 'خطوات بسيطة مكتوبة', href: '/howto' })),
-      h('a', { class: 'dashed-link', href: '#/login/interpreter' }, ic('languages'), 'أنا مترجم إشارة — بوابة المترجمين المتفرغين'),
-      h('div', { class: 'info-card' }, ic('wifi-off'),
-        h('span', {}, 'الأسئلة والأعراض والصور تعمل دون إنترنت بعد فتح التطبيق مرة واحدة. الرسائل وتنبيه الطبيب تعمل بالربط المباشر بين الهاتفين أو عبر خادم المستشفى.')),
+        pic('sos-button', 'help-pic'),
+        h('span', {}, h('strong', {}, 'أحتاج مساعدة الآن'), h('small', {}, 'رسالة كبيرة حمراء تُريها للطبيب أو الممرض'))),
+      h('h2', { class: 'section-title' }, 'اختر ما تريد'),
+      h('div', { class: 'pgrid' },
+        picTile({ pic: 'person-raising-hand', title: 'أنا مريض', sub: 'أعراضي ورسالتي للطبيب', href: '/patient', tone: 'teal', wide: true }),
+        picTile({ pic: 'face-with-thermometer', title: 'الأعراض بالصور', sub: 'اضغط على صورة العَرَض', href: '/symptoms', tone: 'amber' }),
+        picTile({ pic: 'video-camera', title: 'شكوى بالإشارة', sub: 'فيديو يترجمه مترجم', href: '/complaint', tone: 'blue' }),
+        picTile({ pic: 'person-deaf', title: 'فيديوهات الإشارة', sub: 'مكتبة حسب الموضوع', href: '/signs', tone: 'teal' }),
+        picTile({ pic: 'spiral-calendar', title: 'موعد ومترجم', sub: 'مترجم يرافقك للعيادة', href: '/appointment', tone: 'rose' }),
+        picTile({ pic: 'megaphone', title: 'الحملات', sub: 'تطعيم وتوعية', href: '/campaigns', tone: 'amber' }),
+        picTile({ pic: 'open-book', title: 'كيف أستخدمه؟', sub: 'خطوات بالصور', href: '/howto', tone: 'blue' }),
+        picTile({ pic: 'health-worker', title: 'أنا طبيب أو ممرض', sub: 'بتسجيل دخول', href: '/login/staff', tone: 'gray' }),
+        picTile({ pic: 'handshake', title: 'أنا مترجم إشارة', sub: 'بوابة المترجمين', href: '/login/interpreter', tone: 'gray' })),
+      h('div', { class: 'info-card' }, pic('mobile-phone', 'info-pic'),
+        h('span', {}, 'الأعراض والأسئلة والصور تعمل دون إنترنت بعد فتح التطبيق مرة واحدة. الرسائل وتنبيه الطبيب تعمل بالربط المباشر بين الهاتفين أو عبر خادم المستشفى.')),
       h('p', { class: 'disclaimer' }, 'هذا التطبيق أداة تواصل ومساعدة فقط. لا يقدّم تشخيصًا طبيًا ولا يصف علاجًا أو جرعات دوائية، ولا يغني عن مترجم لغة الإشارة عند توفره.'),
       footLinks(),
       h('p', { class: 'foot-links', style: 'border:0;margin-top:0' },
@@ -63,18 +68,18 @@ export function home(_, app) {
 /* ---------- كيفية الاستخدام ---------- */
 export function howto() {
   const steps = [
-    ['اضغط «أنا مريض».', 'ستجد كل ما تحتاجه لتوضيح حالتك.'],
-    ['اختر الأعراض بالصور.', 'اضغط على الصورة المناسبة، ثم اختر الشدة: خفيف، متوسط، شديد.'],
-    ['حدّد مكان الألم.', 'اضغط على مكان الألم في صورة الجسم، ثم اختر شدته.'],
-    ['ابدأ المقابلة.', 'سيظهر رمز من 4 أرقام. أعطِ الرمز للطبيب أو الممرض ليفتح مقابلتك.'],
-    ['وافق على المشاركة إن أردت.', 'لا يرى الطبيب أعراضك إلا إذا ضغطت «أوافق على مشاركة أعراضي».'],
-    ['اقرأ أسئلة الطبيب وأجب.', 'يظهر السؤال مكتوبًا، ومعه فيديو الإشارة إن كان متوفرًا. اضغط نعم أو لا أو لا أعرف.'],
-    ['عند الحاجة اضغط «أحتاج مساعدة الآن».', 'يظهر لك تنبيه كبير يمكنك إظهاره لأي طبيب أو ممرض.']
+    ['اضغط «أنا مريض».', 'ستجد كل ما تحتاجه لتوضيح حالتك.', 'person-raising-hand'],
+    ['اختر الأعراض بالصور.', 'اضغط على الصورة المناسبة، ثم اختر الشدة: خفيف، متوسط، شديد.', 'face-with-thermometer'],
+    ['حدّد مكان الألم.', 'اضغط على مكان الألم في صورة الجسم، ثم اختر شدته.', 'round-pushpin'],
+    ['ابدأ المقابلة.', 'سيظهر رمز من 4 أرقام. أعطِ الرمز للطبيب أو الممرض ليفتح مقابلتك.', 'speech-balloon'],
+    ['وافق على المشاركة إن أردت.', 'لا يرى الطبيب أعراضك إلا إذا ضغطت «أوافق على مشاركة أعراضي».', 'check-mark-button'],
+    ['اقرأ أسئلة الطبيب وأجب.', 'يظهر السؤال مكتوبًا ومعه فيديو الإشارة إن توفر. اضغط صورة: نعم أو لا أو لا أعرف.', 'thinking-face'],
+    ['عند الحاجة اضغط «أحتاج مساعدة الآن».', 'يظهر لك تنبيه كبير يمكنك إظهاره لأي طبيب أو ممرض.', 'sos-button']
   ];
   return {
     title: 'كيفية استخدام التطبيق',
     el: h('div', {},
-      h('ol', { class: 'steps' }, steps.map(([t, d]) => h('li', {}, h('strong', {}, t), h('span', {}, d)))),
+      h('ol', { class: 'steps pic-steps' }, steps.map(([t, d, p]) => h('li', {}, pic(p, 'step-pic'), h('div', {}, h('strong', {}, t), h('span', {}, d))))),
       h('div', { class: 'card' },
         h('h2', {}, 'مهم أن تعرف'),
         h('ul', { class: 'plain' },
@@ -88,32 +93,32 @@ export function howto() {
 
 /* ---------- طلب المساعدة ---------- */
 export function help(_, app) {
-  const phrases = [['أحتاج مساعدة', 'o6'], ['أحتاج مترجم لغة إشارة', 'o7'], ['طوارئ! أحتاج طبيبًا الآن', 'e4'],
-    ['أشعر بألم شديد', 'p5'], ['أحتاج دورة المياه', null], ['أحتاج ماء', null], ['لم أفهم، اكتب لي من فضلك', null]];
+  const phrases = [['أحتاج مساعدة', 'o6', 'folded-hands', 'teal'], ['أحتاج مترجم لغة إشارة', 'o7', 'person-deaf', 'blue'], ['طوارئ! أحتاج طبيبًا الآن', 'e4', 'ambulance', 'rose'],
+    ['أشعر بألم شديد', 'p5', 'tired-face', 'amber'], ['أحتاج دورة المياه', null, 'toilet', 'blue'], ['أحتاج ماء', null, 'cup-with-straw', 'teal'],
+    ['لم أفهم، اكتب لي من فضلك', null, 'writing-hand', 'amber'], ['أريد أن أرى الطبيب', null, 'health-worker', 'gray']];
   const c = content();
   return {
     title: 'طلب المساعدة', noFab: true,
     el: h('div', {},
-      h('button', { class: 'btn danger giant', type: 'button', onclick: () => app.helpNow() }, ic('siren'), 'أحتاج مساعدة الآن'),
+      h('button', { class: 'btn danger giant', type: 'button', onclick: () => app.helpNow() }, pic('sos-button', 'btn-pic big'), 'أحتاج مساعدة الآن'),
       h('p', { class: 'note' }, 'يعرض الزر رسالة كبيرة تطلب حضور الطبيب أو الممرض. يصل تنبيه فعلي لهاتف الطبيب إذا كان هاتفك مرتبطًا به مباشرة أو متصلًا بنظام المستشفى.'),
       h('h2', {}, 'جمل سريعة للإظهار'),
       h('p', { class: 'note' }, 'اضغط على الجملة لتظهر بخط كبير، وأرِ الشاشة للشخص أمامك.'),
-      h('div', { class: 'tiles' }, phrases.map(([t, sid]) =>
-        tile({ icon: 'message-square', title: t, onclick: () => showBig({ text: t, sign: sid ? byId(c.signs, sid) : null, danger: sid === 'e4' }) }))))
+      h('div', { class: 'pgrid' }, phrases.map(([t, sid, p, tone]) =>
+        picTile({ pic: p, title: t, tone, onclick: () => showBig({ text: t, image: p, sign: sid ? byId(c.signs, sid) : null, danger: sid === 'e4' }) }))))
   };
 }
 
 /* ---------- مكتبة الفيديو ---------- */
 export function signsHome() {
   const c = content();
-  const grid = h('div', { class: 'tiles' });
+  const grid = h('div', { class: 'pgrid' });
   c.categories.forEach(cat => {
     const list = c.signs.filter(s => s.catId === cat.id);
     const sub = h('small', {}, `${list.length} جملة/كلمة`);
     Promise.all(list.map(videoSource)).then(r => { sub.textContent = `${list.length} جملة/كلمة — ${r.filter(Boolean).length} فيديو متوفر`; });
-    grid.append(h('a', { class: 'tile', href: '#/signs/' + cat.id },
-      h('span', { class: 'tile-icon' }, iconEl(cat.icon)), h('span', { class: 'tile-text' }, h('strong', {}, cat.title), sub),
-      h('span', { class: 'tile-go', html: icon('chevron-left') })));
+    grid.append(h('a', { class: 'ptile tone-teal', href: '#/signs/' + cat.id },
+      h('span', { class: 'ptile-pic' }, iconEl(cat.icon)), h('span', { class: 'ptile-text' }, h('strong', {}, cat.title), sub)));
   });
   return {
     title: 'فيديوهات لغة الإشارة',

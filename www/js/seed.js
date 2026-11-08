@@ -10,14 +10,14 @@ export const COMPLAINT_SYMPTOMS = ['الصداع', 'ألم البطن', 'ألم 
 export const ANSWER_TYPES = { yesno: 'نعم / لا / لا أعرف', choices: 'اختيارات', text: 'كتابة' };
 
 const CATS = [
-  ['greet', 'التحية والتعريف بالنفس', '👋', 'جمل للتعارف وبداية اللقاء.'],
-  ['pain', 'الألم ومكان الألم', '📍', 'إشارات للسؤال عن الألم ومكانه وشدته.'],
-  ['head', 'الصداع والدوخة والحرارة', '🌡️', 'أعراض شائعة يسأل عنها الطبيب.'],
-  ['allergy', 'الحساسية من الأدوية', '⚠️', 'أسئلة عن الحساسية من الأدوية.'],
-  ['meds', 'الأدوية وطريقة استخدامها', '💊', 'جمل عامة. طريقة الاستخدام يحددها الطبيب أو الصيدلي فقط.'],
-  ['common', 'الأسئلة الطبية الشائعة', '❓', 'أسئلة عامة يطرحها الطبيب أو الممرض.'],
-  ['consent', 'الموافقة والرفض وطلب المساعدة', '✅', 'إجابات أساسية وطلب المساعدة.'],
-  ['emergency', 'الطوارئ الطبية', '🚑', 'جمل للحالات العاجلة.']
+  ['greet', 'التحية والتعريف بالنفس', 'pic:waving-hand', 'جمل للتعارف وبداية اللقاء.'],
+  ['pain', 'الألم ومكان الألم', 'pic:round-pushpin', 'إشارات للسؤال عن الألم ومكانه وشدته.'],
+  ['head', 'الصداع والدوخة والحرارة', 'pic:face-with-thermometer', 'أعراض شائعة يسأل عنها الطبيب.'],
+  ['allergy', 'الحساسية من الأدوية', 'pic:sneezing-face', 'أسئلة عن الحساسية من الأدوية.'],
+  ['meds', 'الأدوية وطريقة استخدامها', 'pic:pill', 'جمل عامة. طريقة الاستخدام يحددها الطبيب أو الصيدلي فقط.'],
+  ['common', 'الأسئلة الطبية الشائعة', 'pic:stethoscope', 'أسئلة عامة يطرحها الطبيب أو الممرض.'],
+  ['consent', 'الموافقة والرفض وطلب المساعدة', 'pic:check-mark-button', 'إجابات أساسية وطلب المساعدة.'],
+  ['emergency', 'الطوارئ الطبية', 'pic:ambulance', 'جمل للحالات العاجلة.']
 ];
 
 // [id, تصنيف, النص]
@@ -63,23 +63,29 @@ const QUESTIONS = [
 
 // urgent: always = تنبيه دائم عند الاختيار، severe = عند اختيار شدة "شديد"
 const SYMPTOMS = [
-  ['headache', 'الصداع', 'body:head', 'h5', null],
+  ['headache', 'الصداع', 'pic:face-with-head-bandage', 'h5', null],
   ['abdomen', 'ألم البطن', 'body:abdomen', 'p5', null],
-  ['chest', 'ألم الصدر', 'body:chest', 'e7', 'severe'],
-  ['dizzy', 'الدوخة', '😵', 'h6', null],
-  ['fever', 'الحرارة', '🌡️', 'h7', null],
-  ['nausea', 'الغثيان', '🤢', 'h8', null],
-  ['allergy', 'الحساسية', '🤧', 'a3', null],
-  ['breath', 'صعوبة التنفس', '🌬️', 'e6', 'always'],
-  ['bodyache', 'ألم في مكان آخر من الجسم', 'body:armR', 'p5', null, true]
+  ['chest', 'ألم الصدر', 'pic:anatomical-heart', 'e7', 'severe'],
+  ['dizzy', 'الدوخة', 'pic:face-with-spiral-eyes', 'h6', null],
+  ['fever', 'الحرارة', 'pic:face-with-thermometer', 'h7', null],
+  ['nausea', 'الغثيان', 'pic:nauseated-face', 'h8', null],
+  ['allergy', 'الحساسية', 'pic:sneezing-face', 'a3', null],
+  ['breath', 'صعوبة التنفس', 'pic:lungs', 'e6', 'always'],
+  ['bodyache', 'ألم في مكان آخر من الجسم', 'pic:adhesive-bandage', 'p5', null, true]
 ];
+
+// أيقونات قديمة (قبل الصور) تُستبدل تلقائيًا على الأجهزة التي حفظت المحتوى سابقًا، ما لم يغيّرها المدير.
+export const OLD_ICONS = {
+  greet: '👋', pain: '📍', head: '🌡️', allergy: '⚠️', meds: '💊', common: '❓', consent: '✅', emergency: '🚑',
+  headache: 'body:head', chest: 'body:chest', dizzy: '😵', fever: '🌡️', nausea: '🤢', allergy_s: '🤧', breath: '🌬️', bodyache: 'body:armR'
+};
 
 export function seedContent() {
   const signs = SIGNS.map(([id, catId, text]) => ({ id, catId, text, desc: '', file: `videos/${id}.mp4`, url: '' }));
   const catOf = Object.fromEntries(SIGNS.map(s => [s[0], s[1]]));
   const textOf = Object.fromEntries(SIGNS.map(s => [s[0], s[2]]));
   return {
-    version: 1,
+    version: 1, picsVersion: 1,
     categories: CATS.map(([id, title, icon, desc]) => ({ id, title, icon, desc })),
     signs,
     questions: QUESTIONS.map(([sid, answerType, choices]) => ({
