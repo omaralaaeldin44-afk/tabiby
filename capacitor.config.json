@@ -1,0 +1,7 @@
+{
+  "appId": "eg.tabibi.yefhamni",
+  "appName": "طبيبي يفهمني",
+  "webDir": "www",
+  "server": { "androidScheme": "http", "cleartext": true },
+  "android": { "allowMixedContent": true }
+}

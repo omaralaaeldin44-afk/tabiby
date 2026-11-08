@@ -1,0 +1,4 @@
+node_modules/
+data/staff.json
+android/
+*.apk
