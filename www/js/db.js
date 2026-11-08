@@ -98,6 +98,19 @@ export async function videoSource(sign) {
   return (await probeCache.get(url)) ? { src: url, kind: 'remote' } : null;
 }
 
+/** حفظ كل فيديو متاح على الهاتف تلقائيًا (مرة واحدة) حتى يعمل لاحقًا دون إنترنت. */
+let autoRunning = false;
+export async function autoSaveVideos() {
+  if (autoRunning || !navigator.onLine) return; autoRunning = true;
+  try {
+    for (const s of content().signs) {
+      if (Media.hasVideo(s.id)) continue;
+      const src = await videoSource(s);
+      if (src?.kind === 'remote' && !/^https?:/i.test(src.src)) { try { await downloadVideo(s); } catch { /* حاول لاحقًا */ } }
+    }
+  } finally { autoRunning = false; }
+}
+
 /** تنزيل فيديو متاح ليُحفظ على الهاتف للعمل دون إنترنت. */
 export async function downloadVideo(sign) {
   const src = await videoSource(sign);

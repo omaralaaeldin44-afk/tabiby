@@ -5,6 +5,7 @@ import { Patient, urgentReason } from './state.js';
 import { Rooms, Net, subscribe } from './rooms.js';
 import { BODY_PARTS, SEVERITY } from './seed.js';
 import { tile, netBadge } from './screens-public.js';
+import { Direct, patientLinkFlow } from './direct.js';
 
 const sevClass = ['', 'mild', 'mid', 'high'];
 
@@ -188,7 +189,7 @@ export function visit(_, app) {
         h('h2', {}, 'ابدأ مقابلة مع الطبيب أو الممرض'),
         h('p', { class: 'lead' }, 'سيظهر لك رمز من 4 أرقام. أعطِه للطبيب أو الممرض ليفتح مقابلتك.'),
         netBadge(),
-        Net.mode === 'local' && h('p', { class: 'note' }, 'تنبيه: هذا الهاتف غير متصل بنظام المستشفى، لذلك لن تصل الرسائل إلى هاتف آخر. يمكنك تسليم هذا الهاتف للطبيب ليسجّل دخوله ويسألك عليه.'),
+        Net.mode === 'local' && h('p', { class: 'note' }, 'بعد البدء يمكنك ربط هاتفك مباشرة بهاتف الطبيب دون إنترنت (نفس الواي فاي أو نقطة اتصال)، أو تسليم هاتفك للطبيب ليسجّل دخوله ويسألك عليه.'),
         h('label', { class: 'field' }, 'اسم للنداء (اختياري — لا تكتب بيانات شخصية)', alias),
         h('button', { class: 'btn primary block', type: 'button', onclick: async e => {
           const btn = e.currentTarget; btn.disabled = true;
@@ -205,6 +206,7 @@ export function visit(_, app) {
     unsub?.();
     const id = Patient.s.roomId;
     const status = h('div', { class: 'card' });
+    const link = h('div', { class: 'card' });
     const consent = h('div', { class: 'card' });
     const thread = h('div');
     const composer = buildComposer(id);
@@ -212,7 +214,13 @@ export function visit(_, app) {
       status.replaceChildren(
         h('h2', {}, 'رمز المقابلة'), h('div', { class: 'code', dir: 'ltr', 'aria-label': 'رمز المقابلة ' + Patient.s.roomCode }, Patient.s.roomCode),
         h('p', { class: 'note' }, 'أعطِ هذا الرمز للطبيب أو الممرض.'), netBadge(),
-        Net.mode === 'local' && h('p', { class: 'note' }, 'الوضع التجريبي: الرسائل محفوظة على هذا الهاتف فقط ولا تصل إلى مستشفى أو هاتف آخر.'));
+        Net.mode === 'local' && !Direct.patientConnected() && h('p', { class: 'note' }, 'هاتفك غير مرتبط بهاتف الطبيب بعد. الرسائل محفوظة على هذا الهاتف حتى تربطه.'));
+      link.replaceChildren(...(Net.mode !== 'local' ? [] : Direct.patientConnected()
+        ? [h('h2', {}, '🔗 الربط المباشر'), badge('✓ هاتفك مرتبط بهاتف الطبيب/الممرض. الرسائل والأسئلة تصل فورًا.', 'ok'),
+          h('button', { class: 'btn ghost block', type: 'button', onclick: () => Direct.closePatient() }, 'قطع الربط')]
+        : [h('h2', {}, '🔗 ربط مباشر بهاتف الطبيب (بدون إنترنت)'),
+          h('p', { class: 'note' }, 'الهاتفان على نفس الواي فاي، أو يفتح أحدهما «نقطة اتصال» ويتصل بها الآخر. ثم يمسح كل منكما رمز الآخر.'),
+          h('button', { class: 'btn blue block', type: 'button', onclick: () => patientLinkFlow() }, '🔗 ابدأ الربط المباشر')]));
       consent.replaceChildren(h('h2', {}, 'مشاركة الأعراض'),
         Patient.s.shared
           ? [h('p', {}, badge('✓ الأعراض مشاركة مع الطبيب/الممرض في هذه المقابلة', 'ok')),
@@ -231,7 +239,7 @@ export function visit(_, app) {
       catch (e) { toast('تعذّر إرسال الإجابة.', 'error'); throw e; }
     };
     drawStatic();
-    root.replaceChildren(urgentBanner(app), status, consent, h('div', { class: 'card' }, h('h2', {}, 'الرسائل والأسئلة'), thread), composer,
+    root.replaceChildren(urgentBanner(app), status, link, consent, h('div', { class: 'card' }, h('h2', {}, 'الرسائل والأسئلة'), thread), composer,
       h('div', { class: 'card' },
         h('button', { class: 'btn blue block', type: 'button', onclick: () => go('/login/staff/' + id) }, '👨‍⚕️ تسليم الهاتف للطبيب (تسجيل دخول الطبيب)'),
         h('button', { class: 'btn ghost block', type: 'button', onclick: async () => {
@@ -239,7 +247,8 @@ export function visit(_, app) {
           try { await Rooms.remove(id, 'patient'); } catch { /* قد تكون محذوفة */ }
           Patient.resetRoom(); unsub?.(); toast('انتهت المقابلة وحُذفت بياناتها.', 'success'); startIntro();
         } }, 'إنهاء المقابلة وحذف بياناتها')));
-    unsub = subscribe(() => Rooms.get(id, 'patient'), (room, err) => {
+    const offDirect = Direct.onChange(() => drawStatic());
+    const unsubRoom = subscribe(() => Rooms.get(id, 'patient'), (room, err) => {
       if (err) {
         if (err.status === 404 || err.status === 401) { Patient.resetRoom(); toast('انتهت هذه المقابلة. ابدأ مقابلة جديدة.', 'error'); return startIntro(); }
         return thread.replaceChildren(h('div', { class: 'alert warn' }, '⚠️ انقطع الاتصال بالخادم. سنحاول مرة أخرى تلقائيًا.'));
@@ -247,6 +256,7 @@ export function visit(_, app) {
       thread.replaceChildren(renderThread(room, { who: 'patient', onAnswer }));
       if (room.messages.some(m => m.type === 'question' && !room.messages.some(a => a.type === 'answer' && a.qid === m.id)) && navigator.vibrate) navigator.vibrate(200);
     });
+    unsub = () => { unsubRoom(); offDirect(); };
   };
 
   function buildComposer(id) {
@@ -257,7 +267,8 @@ export function visit(_, app) {
       if (!text) return toast('اكتب رسالتك أولًا.', 'error');
       try {
         await Rooms.post(id, 'patient', { type: 'text', text }); t.value = '';
-        toast(Net.mode === 'server' ? 'أُرسلت رسالتك إلى الطبيب/الممرض.' : 'حُفظت الرسالة على هذا الهاتف. لن تصل لهاتف آخر دون اتصال بنظام المستشفى.', Net.mode === 'server' ? 'success' : 'info', 6000);
+        const sent = Net.mode === 'server' || Direct.patientConnected();
+        toast(sent ? 'أُرسلت رسالتك إلى الطبيب/الممرض.' : 'حُفظت الرسالة على هذا الهاتف، وستصل للطبيب عند ربط الهاتفين.', sent ? 'success' : 'info', 6000);
       } catch { toast('تعذّر إرسال الرسالة. تحقق من الاتصال.', 'error'); }
     };
     return h('div', { class: 'card' }, h('h2', {}, 'اكتب رسالة للطبيب'),

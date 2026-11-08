@@ -3,6 +3,7 @@ import { h, toast, iconEl, badge, videoBadge, videoPlayer, showBig, confirmBox }
 import { content, byId, videoSource, downloadVideo, clearProbe } from './db.js';
 import { Net, detectServer } from './rooms.js';
 import { Settings, Patient } from './state.js';
+import { Direct } from './direct.js';
 
 export const tile = ({ icon, title, sub, cls = '', href, onclick }) =>
   h(href ? 'a' : 'button', { class: 'tile ' + cls, href: href ? '#' + href : null, type: href ? null : 'button', onclick },
@@ -10,6 +11,8 @@ export const tile = ({ icon, title, sub, cls = '', href, onclick }) =>
     h('span', { class: 'tile-text' }, h('strong', {}, title), sub && h('small', {}, sub)));
 
 export function netBadge() {
+  if (Net.mode === 'local' && Direct.patientConnected()) return badge('🟢 متصل مباشرة بهاتف الطبيب/الممرض', 'ok');
+  if (Net.mode === 'local' && Direct.staffCount()) return badge(`🟢 مرتبط مباشرة بـ ${Direct.staffCount()} هاتف مريض`, 'ok');
   return Net.mode === 'server'
     ? badge('🟢 متصل بنظام المستشفى', 'ok')
     : badge('🟠 هذا الهاتف فقط — غير متصل بنظام المستشفى', 'warn');
@@ -57,8 +60,8 @@ export function howto() {
         h('h2', {}, 'مهم أن تعرف'),
         h('ul', { class: 'plain' },
           h('li', {}, 'الأعراض والأسئلة والصور تعمل دون إنترنت بعد فتح التطبيق مرة واحدة.'),
-          h('li', {}, 'إرسال الرسائل بين هاتف المريض وهاتف الطبيب يحتاج اتصالًا بنظام المستشفى (شبكة واي فاي داخلية أو إنترنت).'),
-          h('li', {}, 'بدون اتصال: يمكنك أن تُري شاشة هاتفك للطبيب، أو تسلّمه الهاتف ليسجّل دخوله ويسألك عليه.'),
+          h('li', {}, 'الرسائل بين هاتف المريض وهاتف الطبيب تعمل دون إنترنت عبر «الربط المباشر»: الهاتفان على نفس الواي فاي، أو يفتح أحدهما نقطة اتصال ويتصل بها الآخر، ثم يمسح كل منهما رمز الآخر.'),
+          h('li', {}, 'إذا لم توجد أي شبكة بين الهاتفين: أرِ شاشة هاتفك للطبيب، أو سلّمه الهاتف ليسجّل دخوله ويسألك عليه.'),
           h('li', {}, 'التطبيق لا يشخّص المرض ولا يصف علاجًا.'))),
       h('a', { class: 'btn primary block', href: '#/patient' }, 'ابدأ الآن'))
   };
@@ -73,7 +76,7 @@ export function help(_, app) {
     title: 'طلب المساعدة', noFab: true,
     el: h('div', {},
       h('button', { class: 'btn danger giant', type: 'button', onclick: () => app.helpNow() }, '🆘 أحتاج مساعدة الآن'),
-      h('p', { class: 'note' }, 'يعرض الزر رسالة كبيرة تطلب حضور الطبيب أو الممرض. لا يصل تنبيه فعلي إلا إذا كان هاتفك متصلًا بنظام المستشفى.'),
+      h('p', { class: 'note' }, 'يعرض الزر رسالة كبيرة تطلب حضور الطبيب أو الممرض. يصل تنبيه فعلي لهاتف الطبيب إذا كان هاتفك مرتبطًا به مباشرة أو متصلًا بنظام المستشفى.'),
       h('h2', {}, 'جمل سريعة للإظهار'),
       h('p', { class: 'note' }, 'اضغط على الجملة لتظهر بخط كبير، وأرِ الشاشة للشخص أمامك.'),
       h('div', { class: 'tiles' }, phrases.map(([t, sid]) =>
@@ -136,7 +139,7 @@ export function settings(_, app) {
   const drawStatus = () => status.replaceChildren(h('h2', {}, 'حالة الاتصال'), netBadge(),
     h('p', { class: 'note' }, Net.mode === 'server'
       ? 'تُرسل الرسائل عبر الخادم: ' + (Net.base || location.origin)
-      : 'الرسائل تُحفظ على هذا الجهاز فقط (وضع تجريبي). للتواصل بين هاتفين اكتب عنوان خادم المستشفى أدناه، أو افتح التطبيق من عنوان الخادم نفسه.'));
+      : 'بدون خادم: استخدم «الربط المباشر» من صفحة المقابلة لربط هاتف المريض بهاتف الطبيب على نفس الواي فاي أو نقطة اتصال، دون إنترنت. أو اكتب عنوان خادم المستشفى أدناه.'));
   drawStatus();
   const url = h('input', { class: 'input', type: 'url', dir: 'ltr', placeholder: 'http://192.168.1.10:3000', value: Settings.serverUrl, 'aria-label': 'عنوان الخادم' });
   const save = h('button', { class: 'btn primary', type: 'button' }, 'حفظ واختبار الاتصال');

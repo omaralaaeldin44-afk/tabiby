@@ -2,7 +2,8 @@
 import { h, go, toast, confirmBox, badge } from './ui.js';
 import { content } from './db.js';
 import { Session } from './state.js';
-import { Rooms, Net, subscribe, serverLogin } from './rooms.js';
+import { Rooms, Net, Local, subscribe, serverLogin } from './rooms.js';
+import { Direct, staffLinkFlow } from './direct.js';
 import { DEMO_STAFF } from './staff-demo.js';
 import { renderThread } from './screens-patient.js';
 import { netBadge } from './screens-public.js';
@@ -59,7 +60,8 @@ export function login({ role, room }) {
 export const staffSession = () => { const s = Session.get(); return s && (s.role === 'doctor' || s.role === 'nurse') ? s : null; };
 export const adminSession = () => { const s = Session.get(); return s?.role === 'admin' ? s : null; };
 
-const logoutBtn = () => h('button', { class: 'btn ghost', type: 'button', onclick: () => { Session.clear(); toast('تم تسجيل الخروج.', 'success'); go('/'); } }, 'تسجيل الخروج');
+export const staffLogout = () => { Session.clear(); try { Local.clearMirrors(); } catch { /* ignore */ } };
+const logoutBtn = () => h('button', { class: 'btn ghost', type: 'button', onclick: () => { staffLogout(); toast('تم تسجيل الخروج.', 'success'); go('/'); } }, 'تسجيل الخروج');
 
 /* ---------- تنبيه مرئي لطلب المساعدة ---------- */
 const seen = new Set();
@@ -96,14 +98,18 @@ export function staffDash() {
     list.sort((a, b) => (b.helpAt ? 1 : 0) - (a.helpAt ? 1 : 0) || b.lastAt - a.lastAt);
     listBox.replaceChildren(...(list.length ? list.map(r => h('a', { class: 'row' + (r.helpAt ? ' help' : ''), href: '#/room/' + r.id },
       h('span', { class: 'row-main' }, h('strong', {}, 'مقابلة ' + r.code + (r.alias ? ' — ' + r.alias : '')), h('small', {}, 'آخر نشاط: ' + new Date(r.lastAt).toLocaleTimeString('ar-EG'))),
+      Direct.isLinked(r.id) && badge('🔗 مرتبط مباشرة', 'ok'),
       r.helpAt ? badge('🆘 يطلب مساعدة', 'no') : badge(r.shared ? 'شارك أعراضه' : 'لم يشارك الأعراض', r.shared ? 'ok' : 'info'))) : [h('p', { class: 'empty' }, 'لا توجد مقابلات مفتوحة حاليًا.')]));
   });
   return {
     title: 'لوحة الطبيب/الممرض', cleanup: () => { unsub(); stopFlash(); }, noFab: true,
     el: h('div', {},
       h('div', { class: 'card' }, h('strong', {}, s.name), ' ', badge(s.role === 'doctor' ? 'طبيب' : 'ممرض', 'info'), ' ', logoutBtn(), h('div', {}, netBadge()),
-        Net.mode === 'local' && h('p', { class: 'note' }, 'وضع تجريبي: ترى فقط المقابلات المفتوحة على هذا الجهاز/المتصفح.')),
+        Net.mode === 'local' && h('p', { class: 'note' }, 'بدون خادم: ترى المقابلات المفتوحة على هذا الجهاز، والمقابلات المرتبطة مباشرة بهواتف المرضى.')),
       alertBox,
+      Net.mode === 'local' && h('div', { class: 'card' }, h('h2', {}, '🔗 ربط مباشر بهاتف مريض (بدون إنترنت)'),
+        h('p', { class: 'note' }, 'الهاتفان على نفس الواي فاي أو نقطة اتصال. امسح رمز المريض، ثم يمسح المريض رمزك.'),
+        h('button', { class: 'btn blue block', type: 'button', onclick: () => staffLinkFlow(id => go('/room/' + id)) }, '📷 امسح رمز المريض')),
       h('div', { class: 'card' }, h('h2', {}, 'فتح مقابلة برمزها'), h('label', { class: 'field' }, 'رمز المقابلة الظاهر على هاتف المريض', code),
         h('button', { class: 'btn primary block', type: 'button', onclick: open }, 'فتح المقابلة')),
       h('h2', {}, 'المقابلات المفتوحة'), listBox)
@@ -167,7 +173,7 @@ export function staffRoom({ id }) {
       h('div', { class: 'row-actions' },
         h('a', { class: 'btn ghost', href: '#/staff' }, '← كل المقابلات'),
         h('button', { class: 'btn ghost', type: 'button', onclick: async () => { if (await confirmBox('سيتم إنهاء المقابلة وحذف رسائلها. متابعة؟', 'إنهاء المقابلة')) { await Rooms.remove(id, 'staff').catch(() => {}); go('/staff'); } } }, 'إنهاء المقابلة')));
-    helpBox.replaceChildren(...(room.helpAt ? [h('div', { class: 'alert urgent flash', role: 'alert' }, h('strong', {}, '🆘 المريض يطلب المساعدة الآن'),
+    helpBox.replaceChildren(...(room.direct && !Direct.isLinked(id) ? [h('div', { class: 'alert warn' }, '⚠️ الربط المباشر بهاتف هذا المريض منقطع. ما تراه آخر نسخة وصلت. أعد الربط من لوحة الطبيب.')] : []), ...(room.helpAt ? [h('div', { class: 'alert urgent flash', role: 'alert' }, h('strong', {}, '🆘 المريض يطلب المساعدة الآن'),
       h('button', { class: 'btn primary', type: 'button', onclick: async () => { await Rooms.post(id, 'staff', { type: 'ack' }); toast('أُرسل للمريض أنك استلمت طلبه.', 'success'); } }, '✓ تم استلام الطلب'))] : []));
     // ملخص المريض
     const p = room.patient;

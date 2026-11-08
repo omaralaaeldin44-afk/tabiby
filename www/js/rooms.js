@@ -4,6 +4,8 @@ import { Settings, Patient, Session } from './state.js';
 import { uid } from './db.js';
 
 export const Net = { mode: 'local', base: '' };
+/** خطافات يضبطها direct.js لتمرير رسائل الطبيب عبر الربط المباشر بدل التخزين المحلي. */
+export const hooks = {};
 
 export async function detectServer() {
   const cands = [];
@@ -61,7 +63,7 @@ const rd = () => {
 };
 const wr = o => { try { localStorage.setItem(LS, JSON.stringify(o)); } catch { throw new Error('تعذّر الحفظ على الهاتف'); } };
 const nf = () => Object.assign(new Error('not found'), { status: 404 });
-const Local = {
+export const Local = {
   async create(alias) {
     const o = rd(); const used = new Set(Object.values(o).map(r => r.code)); let code;
     do { code = String(1000 + Math.floor(Math.random() * 9000)); } while (used.has(code));
@@ -84,14 +86,20 @@ const Local = {
   },
   async share(id, patient) { const o = rd(); if (!o[id]) throw nf(); o[id].shared = true; o[id].patient = patient; wr(o); return { ok: true }; },
   async unshare(id) { const o = rd(); if (!o[id]) throw nf(); o[id].shared = false; o[id].patient = null; wr(o); return { ok: true }; },
-  async remove(id) { const o = rd(); delete o[id]; wr(o); return { ok: true }; }
+  async remove(id) { const o = rd(); delete o[id]; wr(o); return { ok: true }; },
+  /** نسخة من مقابلة على هاتف المريض تصل عبر الربط المباشر (على هاتف الطبيب فقط). */
+  isMirror(id) { try { return !!JSON.parse(localStorage.getItem(LS) || '{}')[id]?.direct; } catch { return false; } },
+  clearMirrors() { const o = rd(); for (const k in o) if (o[k].direct) delete o[k]; wr(o); },
+  putMirror(room) { const o = rd(); o[room.id] = { ...room, direct: true }; wr(o); }
 };
 
 const impl = () => (Net.mode === 'server' ? Server : Local);
 export const Rooms = {
   create: a => impl().create(a), get: (id, who) => impl().get(id, who), list: () => impl().list(),
-  byCode: c => impl().byCode(c), post: (id, who, m) => impl().post(id, who, m),
-  share: (id, p) => impl().share(id, p), unshare: id => impl().unshare(id), remove: (id, who) => impl().remove(id, who)
+  byCode: c => impl().byCode(c),
+  post: (id, who, m) => (who === 'staff' && hooks.staffPost?.(id, m)) || impl().post(id, who, m),
+  share: (id, p) => impl().share(id, p), unshare: id => impl().unshare(id),
+  remove: (id, who) => (who === 'staff' && hooks.staffRemove?.(id)) || impl().remove(id, who)
 };
 
 /** استطلاع دوري؛ يستدعي cb(data) عند تغيّر البيانات و cb(null, err) عند حدوث خطأ جديد. */

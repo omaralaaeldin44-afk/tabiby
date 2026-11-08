@@ -192,3 +192,9 @@ textarea.input { resize: vertical; }
 .container, .card, .tile { min-width: 0; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .flash, .big-show.danger.flash { animation: none; } * { scroll-behavior: auto; } }
 @media (max-width: 380px) { :root { font-size: 18px; } .answers.yn { grid-template-columns: 1fr; } }
+
+/* الربط المباشر */
+.link-step { text-align: center; }
+.qr { background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 8px; max-width: 320px; margin: 10px auto; }
+.qr svg { width: 100%; height: auto; display: block; }
+.scan-video { width: 100%; max-height: 50vh; background: #000; border-radius: 14px; object-fit: cover; }

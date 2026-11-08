@@ -1,12 +1,13 @@
 // نقطة البدء: التوجيه، الهيكل العام، زر المساعدة، تسجيل الخروج التلقائي.
 import { h, go, toast, modal } from './ui.js';
-import { Media, content } from './db.js';
+import { Media, content, autoSaveVideos } from './db.js';
 import { Rooms, Net, detectServer, subscribe } from './rooms.js';
 import { Patient, Session, urgentReason } from './state.js';
 import * as pub from './screens-public.js';
 import * as pat from './screens-patient.js';
 import * as stf from './screens-staff.js';
 import { admin } from './screens-admin.js';
+import { Direct } from './direct.js';
 
 const routes = [
   ['/', pub.home], ['/howto', pub.howto], ['/help', pub.help], ['/signs', pub.signsHome], ['/signs/:id', pub.signsCategory],
@@ -42,15 +43,17 @@ async function helpNow() {
       if (!Patient.s.roomId) { const r = await Rooms.create(''); Object.assign(Patient.s, { roomId: r.id, roomKey: r.key, roomCode: r.code }); Patient.save(); }
       await Rooms.post(Patient.s.roomId, 'patient', { type: 'help' }); delivered = true; roomId = Patient.s.roomId;
     } else if (Patient.s.roomId) {
-      await Rooms.post(Patient.s.roomId, 'patient', { type: 'help' }).catch(() => {});
+      await Rooms.post(Patient.s.roomId, 'patient', { type: 'help' });
+      // في الربط المباشر يُرسل هاتف المريض نسخة المقابلة فورًا إلى هاتف الطبيب.
+      if (Direct.patientConnected()) { delivered = true; roomId = Patient.s.roomId; }
     }
   } catch { delivered = false; }
   navigator.vibrate?.([400, 200, 400, 200, 400]);
   const urgent = urgentReason(content());
   const ack = h('p', { class: 'big-status' });
   const status = h('p', { class: 'big-status' }, delivered
-    ? '✅ تم إرسال تنبيه إلى شاشة الطبيب/الممرض المتصل بالنظام. ابقَ في مكانك وارفع هذه الشاشة.'
-    : '⚠️ لم يُرسل أي تنبيه، لأن هذا الهاتف غير متصل بنظام المستشفى. أرِ هذه الشاشة الآن لأقرب طبيب أو ممرض.');
+    ? '✅ تم إرسال تنبيه إلى شاشة الطبيب/الممرض. ابقَ في مكانك وارفع هذه الشاشة.'
+    : '⚠️ لم يُرسل أي تنبيه، لأن هذا الهاتف غير مرتبط بهاتف الطبيب ولا بنظام المستشفى. أرِ هذه الشاشة الآن لأقرب طبيب أو ممرض.');
   let unsub;
   modal({
     wide: true, onClose: () => unsub?.(),
@@ -104,7 +107,7 @@ window.addEventListener('online', updateOffline); window.addEventListener('offli
 let idle;
 const bump = () => {
   clearTimeout(idle);
-  if (Session.get()) idle = setTimeout(() => { Session.clear(); toast('تم تسجيل خروجك تلقائيًا لحماية بيانات المرضى.', 'info', 8000); go('/'); }, 15 * 60e3);
+  if (Session.get()) idle = setTimeout(() => { stf.staffLogout(); toast('تم تسجيل خروجك تلقائيًا لحماية بيانات المرضى.', 'info', 8000); go('/'); }, 15 * 60e3);
 };
 ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, bump, { passive: true }));
 
@@ -113,4 +116,5 @@ const bump = () => {
   await detectServer();
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
   bump(); render();
+  setTimeout(() => autoSaveVideos().catch(() => {}), 4000);
 })();
