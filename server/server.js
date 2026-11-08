@@ -18,7 +18,7 @@ const ROOM_TTL = 12 * 3600e3, TOKEN_TTL = 30 * 60e3;
 function loadStaff() {
   const f = path.join(DATA, 'staff.json');
   if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8'));
-  console.warn('⚠️  لا يوجد data/staff.json — تم تفعيل حسابات تجريبية. أنشئ حسابات حقيقية بالأمر: npm run add-staff -- <user> <doctor|nurse|admin> <password> "<الاسم>"');
+  console.warn('⚠️  لا يوجد data/staff.json — تم تفعيل حسابات تجريبية. أنشئ حسابات حقيقية بالأمر: npm run add-staff -- <user> <doctor|nurse|interpreter|admin> <password> "<الاسم>"');
   const mk = (u, name, role, pw) => {
     const salt = crypto.randomBytes(16).toString('hex');
     return [u, { name, role, salt, hash: crypto.scryptSync(pw, salt, 32).toString('hex') }];
@@ -26,6 +26,7 @@ function loadStaff() {
   return Object.fromEntries([
     mk('dr.demo', 'طبيب تجريبي', 'doctor', 'Demo@Doctor1'),
     mk('nurse.demo', 'ممرض تجريبي', 'nurse', 'Demo@Nurse1'),
+    mk('interp.demo', 'مترجم إشارة تجريبي', 'interpreter', 'Demo@Interp1'),
     mk('admin.demo', 'مدير المحتوى التجريبي', 'admin', 'Demo@Admin1')
   ]);
 }
@@ -42,8 +43,8 @@ const eq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(
 function headers(extra = {}) {
   return {
     'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY',
-    'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Room-Key',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', ...extra
+    'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Room-Key, X-Request-Key',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', ...extra
   };
 }
 function send(res, code, obj) {
@@ -66,6 +67,38 @@ function staffAuth(req) {
   return t;
 }
 const isClinical = t => t && (t.role === 'doctor' || t.role === 'nurse');
+const isInterp = t => t && t.role === 'interpreter';
+const tokenFromQuery = url => { const t = tokens.get(url.searchParams.get('token') || ''); return t && t.exp > Date.now() ? t : null; };
+
+/* ---------- طلبات المترجم: فيديو شكوى بالإشارة + موعد عيادة مع مترجم ----------
+   تُحفظ في data/requests (البيانات الوصفية + ملف الفيديو) وتُحذف تلقائيًا بعد 7 أيام أو عند طلب المريض. */
+const REQ_DIR = path.join(DATA, 'requests');
+const REQ_FILE = path.join(REQ_DIR, 'requests.json');
+const REQ_TTL = 7 * 24 * 3600e3, VIDEO_MAX = 60e6;
+fs.mkdirSync(REQ_DIR, { recursive: true });
+const requests = new Map(fs.existsSync(REQ_FILE) ? JSON.parse(fs.readFileSync(REQ_FILE, 'utf8')).map(r => [r.id, r]) : []);
+let saveTimer;
+const saveReqs = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => fs.writeFile(REQ_FILE, JSON.stringify([...requests.values()]), { mode: 0o600 }, () => {}), 200); };
+const SYMS = ['الصداع', 'ألم البطن', 'ألم الصدر', 'الدوخة', 'الحرارة', 'الغثيان', 'الحساسية', 'صعوبة التنفس'];
+function cleanRequest(b) {
+  const base = { firstName: str(b.firstName, 40).trim(), note: str(b.note, 500).trim() };
+  if (b.kind === 'complaint') {
+    if (b.consent !== true) return null;
+    return { kind: 'complaint', ...base, clinic: str(b.clinic, 80).trim(), urgent: b.urgent === true,
+      symptoms: (Array.isArray(b.symptoms) ? b.symptoms : []).filter(x => SYMS.includes(x)).slice(0, 8), consent: true };
+  }
+  if (b.kind === 'appointment') {
+    const clinic = str(b.clinic, 80).trim(), date = str(b.date, 10), time = str(b.time, 5);
+    if (!clinic || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+    return { kind: 'appointment', ...base, clinic, date, time, doctor: str(b.doctor, 60).trim(), phone: str(b.phone, 20).replace(/[^\d+ ]/g, '') };
+  }
+  return null;
+}
+const reqView = r => { const { key, video, ...rest } = r; return { ...rest, hasVideo: !!video?.file }; };
+function removeReq(r) {
+  if (r.video?.file) fs.unlink(path.join(REQ_DIR, r.video.file), () => {});
+  requests.delete(r.id); saveReqs();
+}
 
 function cleanMsg(who, b) {
   const t = b.type;
@@ -118,6 +151,76 @@ async function api(req, res, url) {
     const token = crypto.randomBytes(24).toString('hex');
     tokens.set(token, { user: u, role: acc.role, name: acc.name, exp: Date.now() + TOKEN_TTL });
     return send(res, 200, { token, role: acc.role, name: acc.name });
+  }
+
+  /* ---- الطلبات ---- */
+  if (p === '/api/requests' && m === 'POST') {
+    const r = cleanRequest(await readBody(req));
+    if (!r) return send(res, 400, { error: 'bad', message: 'بيانات غير مكتملة.' });
+    if (requests.size > 2000) return send(res, 503, { error: 'full' });
+    const id = crypto.randomBytes(8).toString('hex'), key = crypto.randomBytes(16).toString('hex');
+    requests.set(id, { id, key, ...r, createdAt: Date.now(), status: 'new', reply: null, video: null });
+    saveReqs();
+    return send(res, 200, { id, key });
+  }
+  if (p === '/api/requests' && m === 'GET') {
+    const t = staffAuth(req);
+    if (!isInterp(t) && !isClinical(t)) return send(res, 401, { error: 'auth' });
+    const list = [...requests.values()].map(reqView).sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || b.createdAt - a.createdAt);
+    return send(res, 200, list);
+  }
+  const rq = /^\/api\/requests\/(\w+)(\/video|\/reply)?$/.exec(p);
+  if (rq) {
+    const r = requests.get(rq[1]);
+    if (!r) return send(res, 404, { error: 'nf' });
+    const t = staffAuth(req) || tokenFromQuery(url);
+    const owner = eq(req.headers['x-request-key'] || url.searchParams.get('key') || '', r.key);
+    const reader = owner || isInterp(t) || isClinical(t);
+    const sub = rq[2];
+    if (!sub && m === 'GET') return reader ? send(res, 200, reqView(r)) : send(res, 401, { error: 'auth' });
+    if (!sub && m === 'DELETE') { if (!owner) return send(res, 403, { error: 'owner only' }); removeReq(r); return send(res, 200, { ok: true }); }
+    if (sub === '/reply' && m === 'POST') {
+      if (!isInterp(t)) return send(res, 403, { error: 'interpreter only' });
+      const b = await readBody(req);
+      const status = r.kind === 'appointment' ? (['accepted', 'declined'].includes(b.status) ? b.status : null) : 'done';
+      const text = str(b.text, 2000).trim();
+      if (!status || (r.kind === 'complaint' && !text)) return send(res, 400, { error: 'bad' });
+      r.status = status; r.reply = { text, by: t.name, at: Date.now() }; saveReqs();
+      return send(res, 200, reqView(r));
+    }
+    if (sub === '/video' && m === 'PUT') {
+      if (!owner || r.kind !== 'complaint') return send(res, 403, { error: 'owner only' });
+      const type = String(req.headers['content-type'] || '').split(';')[0];
+      if (!/^video\/(mp4|webm|quicktime|3gpp|x-matroska)$/.test(type)) return send(res, 415, { error: 'type' });
+      const ext = { 'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov', 'video/3gpp': '.3gp', 'video/x-matroska': '.mkv' }[type];
+      const file = r.id + ext, tmp = path.join(REQ_DIR, file + '.part');
+      let size = 0, failed = false;
+      await new Promise(resolve => {
+        const out = fs.createWriteStream(tmp, { mode: 0o600 });
+        req.on('data', c => { size += c.length; if (size > VIDEO_MAX && !failed) { failed = true; req.unpipe(out); out.destroy(); req.resume(); } });
+        req.pipe(out); out.on('finish', resolve); out.on('close', resolve); req.on('error', () => { failed = true; resolve(); });
+      });
+      if (failed || !size) { fs.unlink(tmp, () => {}); return send(res, failed ? 413 : 400, { error: failed ? 'big' : 'empty' }); }
+      fs.renameSync(tmp, path.join(REQ_DIR, file));
+      if (r.video?.file && r.video.file !== file) fs.unlink(path.join(REQ_DIR, r.video.file), () => {});
+      r.video = { file, type, size }; saveReqs();
+      return send(res, 200, { ok: true });
+    }
+    if (sub === '/video' && m === 'GET') {
+      if (!reader || !r.video?.file) return send(res, reader ? 404 : 401, { error: 'nf' });
+      const f = path.join(REQ_DIR, r.video.file), st = fs.statSync(f);
+      const h = { 'Content-Type': r.video.type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': '*' };
+      const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+      if (range) {
+        const start = range[1] ? +range[1] : 0, end = range[2] ? Math.min(+range[2], st.size - 1) : st.size - 1;
+        if (start > end) { res.writeHead(416, { 'Content-Range': `bytes */${st.size}` }); return res.end(); }
+        res.writeHead(206, { ...h, 'Content-Range': `bytes ${start}-${end}/${st.size}`, 'Content-Length': end - start + 1 });
+        return fs.createReadStream(f, { start, end }).pipe(res);
+      }
+      res.writeHead(200, { ...h, 'Content-Length': st.size });
+      return fs.createReadStream(f).pipe(res);
+    }
+    return send(res, 404, { error: 'nf' });
   }
 
   if (p === '/api/rooms' && m === 'POST') {
@@ -217,4 +320,5 @@ setInterval(() => {
   for (const [id, r] of rooms) if (now - r.createdAt > ROOM_TTL) rooms.delete(id);
   for (const [t, v] of tokens) if (v.exp < now) tokens.delete(t);
   for (const [k, v] of fails) if (v.until < now && v.n < 5) fails.delete(k);
+  for (const r of [...requests.values()]) if (now - r.createdAt > REQ_TTL) removeReq(r);
 }, 60e3).unref();

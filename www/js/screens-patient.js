@@ -32,17 +32,19 @@ export function patientHub(_, app) {
     root.replaceChildren(
       urgentBanner(app),
       h('div', { class: 'tiles' },
-        tile({ icon: '🖼️', title: 'الأعراض بالصور', sub: 'اختر ما تشعر به', cls: 'primary', href: '/symptoms' }),
-        tile({ icon: '📍', title: 'مكان الألم وشدته', sub: 'اضغط على صورة الجسم', href: '/pain' }),
-        tile({ icon: '💬', title: 'المقابلة ورسالة للطبيب', sub: 'اقرأ الأسئلة وأجب واكتب رسالتك', cls: 'blue', href: '/visit' }),
-        tile({ icon: '🤟', title: 'فيديوهات لغة الإشارة', sub: 'تعلّم الجمل المهمة', href: '/signs' })),
+        tile({ icon: 'image', title: 'الأعراض بالصور', sub: 'اختر ما تشعر به', cls: 'primary', href: '/symptoms' }),
+        tile({ icon: 'map-pin', title: 'مكان الألم وشدته', sub: 'اضغط على صورة الجسم', cls: 'amber', href: '/pain' }),
+        tile({ icon: 'message-square', title: 'المقابلة ورسالة للطبيب', sub: 'اقرأ الأسئلة وأجب واكتب رسالتك', cls: 'blue', href: '/visit' }),
+        tile({ icon: 'video', title: 'فيديو شكوى بالإشارة', sub: 'مترجم متفرغ يترجم شكواك للطبيب', href: '/complaint' }),
+        tile({ icon: 'calendar-clock', title: 'موعد عيادة ومترجم', sub: 'اطلب مترجمًا يرافقك', cls: 'amber', href: '/appointment' }),
+        tile({ icon: 'hand', title: 'فيديوهات لغة الإشارة', sub: 'تعلّم الجمل المهمة', href: '/signs' })),
       h('div', { class: 'card' }, h('h2', {}, 'ما اخترته'),
         (!syms.length && !s.pains.length) ? h('p', { class: 'note' }, 'لم تختر شيئًا بعد.') : h('div', { class: 'chips' },
           syms.map(({ sym, v }) => h('span', { class: 'chip ' + sevClass[v.severity] }, sym.name, v.severity ? ' — ' + SEVERITY[v.severity] : ' — حدّد الشدة')),
           s.pains.map(p => h('span', { class: 'chip ' + sevClass[p.severity] }, 'ألم: ' + p.label + ' — ' + SEVERITY[p.severity])))));
   };
   draw();
-  return { title: 'أنا مريض', el: root };
+  return { title: 'أنا مريض', sub: 'اختر ما يناسبك', el: root };
 }
 
 /* ---------- الأعراض بالصور ---------- */

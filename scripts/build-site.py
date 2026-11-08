@@ -25,7 +25,7 @@ def page(file, title, desc, body):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#1f5f56">
 <meta name="description" content="{desc}">
 <title>{title} – طبيبي يفهمني</title>
 <link rel="icon" href="img/icon.svg" type="image/svg+xml">
@@ -79,6 +79,9 @@ page("index.html", "الرئيسية",
     <div class="card"><div class="ico">📍</div><h3>مكان الألم</h3><p>صورة للجسم يحدد عليها المريض مكان الألم وشدته.</p></div>
     <div class="card"><div class="ico">❓</div><h3>أسئلة جاهزة للطبيب</h3><p>الطبيب يختار سؤالًا فيظهر على هاتف المريض مكتوبًا مع فيديو الإشارة إن توفر.</p></div>
     <div class="card"><div class="ico">🆘</div><h3>أحتاج مساعدة الآن</h3><p>زر كبير يعرض رسالة واضحة، ويرسل تنبيهًا مرئيًا لهاتف الطبيب.</p></div>
+    <div class="card"><div class="ico">🎥</div><h3>فيديو شكوى بالإشارة</h3><p>المريض يسجّل شكواه بلغة الإشارة، ومترجم متفرغ يترجمها بالعربية ليقرأها الطبيب.</p></div>
+    <div class="card"><div class="ico">📅</div><h3>موعد مع مترجم</h3><p>طلب مترجم إشارة يرافق المريض في موعد العيادة.</p></div>
+    <div class="card"><div class="ico">📣</div><h3>الحملات</h3><p>حملات التطعيم والتوعية الموجّهة للصم، مع فيديو إشارة عند توفره.</p></div>
     <div class="card"><div class="ico">🔗</div><h3>يعمل دون إنترنت</h3><p>ربط مباشر بين هاتف المريض وهاتف الطبيب بمسح رمز QR، على نفس الواي فاي أو نقطة اتصال.</p></div>
   </div>
 </div></section>
@@ -88,14 +91,14 @@ page("index.html", "الرئيسية",
   <div class="shots">
     <figure>{phone("symptoms.png", "شاشة اختيار الأعراض بالصور")}<figcaption>الأعراض بالصور<small>صداع، ألم بطن، ألم صدر، دوخة، حرارة…</small></figcaption></figure>
     <figure>{phone("question.png", "سؤال الطبيب على شاشة المريض")}<figcaption>سؤال الطبيب<small>نص كبير وإجابات بالضغط</small></figcaption></figure>
-    <figure>{phone("staff.png", "لوحة الطبيب والممرض")}<figcaption>لوحة الطبيب<small>بعد تسجيل الدخول فقط</small></figcaption></figure>
+    <figure>{phone("complaint.png", "تسجيل فيديو شكوى بلغة الإشارة")}<figcaption>فيديو شكوى بالإشارة<small>يترجمه مترجم متفرغ</small></figcaption></figure>
   </div>
 </div></section>
 
 <section class="alt"><div class="wrap">
   <h2>بصراحة: ما الموجود وما الناقص</h2>
   <div class="grid">
-    <div class="ok"><strong>✓ يعمل الآن</strong><br>الأعراض، مكان الألم، الأسئلة، المحادثة بين هاتفين (ربط مباشر دون إنترنت أو عبر خادم المستشفى)، طلب المساعدة، لوحة إدارة المحتوى.</div>
+    <div class="ok"><strong>✓ يعمل الآن</strong><br>الأعراض، مكان الألم، الأسئلة، المحادثة بين هاتفين (ربط مباشر دون إنترنت أو عبر خادم المستشفى)، طلب المساعدة، فيديو الشكوى وبوابة المترجمين، طلب موعد مع مترجم، الحملات، ولوحة إدارة المحتوى.</div>
     <div class="note"><strong>⚠️ غير متوفر بعد</strong><br>فيديوهات لغة الإشارة المصرية الحقيقية لم تُصوَّر بعد. كل الشاشات تعرض «الفيديو غير متوفر حاليًا» مع النص المكتوب.</div>
   </div>
   <p class="lead" style="margin-top:16px">هل أنت مترجم لغة إشارة مصرية أو جمعية للصم؟ <a href="developers.html#signers">ساعدنا في تصوير الفيديوهات</a>.</p>
@@ -142,6 +145,32 @@ page("features.html", "المميزات", "مميزات تطبيق طبيبي ي
 
 <section><div class="wrap split">
   <div>
+    <h2>🎥 فيديو شكوى بالإشارة وبوابة المترجمين</h2>
+    <ul class="check">
+      <li>المريض يسجّل فيديو حتى 90 ثانية بلغة الإشارة من الكاميرا، أو يختار فيديو من جهازه. لا يُسجَّل صوت.</li>
+      <li>يختار أعراضه اختياريًا، ويحدد إن كانت حالته مستعجلة.</li>
+      <li>لا يُرسل الفيديو إلا بعد موافقته على عرضه على المترجم والطبيب المعالج فقط.</li>
+      <li>المترجم المتفرغ يدخل «بوابة المترجمين»، يشاهد الفيديو، ويكتب الترجمة بالعربية.</li>
+      <li>تظهر الترجمة للمريض في «طلباتي»، مع زر لعرضها على الطبيب بخط كبير.</li>
+      <li>الفيديو يُحذف تلقائيًا بعد 7 أيام، أو فورًا عندما يحذفه المريض.</li>
+    </ul>
+    <p class="note" style="background:#fff3cd;border:2px solid #e0a800;color:#5c4300;border-radius:14px;padding:12px">يحتاج خادم المستشفى ليصل الفيديو للمترجم. على هذا الموقع بدون خادم يُحفظ على الهاتف فقط ويقول التطبيق ذلك صراحة.</p>
+  </div>
+  {phone("interpreter.png", "بوابة المترجمين")}
+</div></section>
+
+<section class="alt"><div class="wrap split">
+  <div>
+    <h2>📅 موعد عيادة مع مترجم</h2>
+    <p>يُدخل المريض اسم العيادة والتاريخ والساعة، ويصل الطلب لمترجمي الإشارة. المترجم يرد «سأحضر مع المريض» مع رسالة، أو يعتذر.</p>
+    <h2 style="margin-top:24px">📣 الحملات والإشعارات</h2>
+    <p>صفحة لحملات التطعيم والتوعية والإعلانات العامة، مصنّفة ومرتبطة بفيديو إشارة. يضيفها مدير المحتوى من لوحة الإدارة.</p>
+  </div>
+  {phone("campaigns.png", "صفحة الحملات")}
+</div></section>
+
+<section><div class="wrap split">
+  <div>
     <h2>🤟 مكتبة لغة الإشارة</h2>
     <p>8 موضوعات و49 كلمة وجملة: التحية والتعريف، الألم ومكانه، الصداع والدوخة والحرارة، الحساسية من الأدوية، الأدوية وطريقة استخدامها، الأسئلة الشائعة، الموافقة والرفض وطلب المساعدة، والطوارئ.</p>
     <ul class="check">
@@ -161,7 +190,7 @@ page("features.html", "المميزات", "مميزات تطبيق طبيبي ي
       <li>إضافة وتعديل الكلمات والجمل وفيديوهاتها.</li>
       <li>إضافة الأسئلة الطبية وربط كل سؤال بفيديو.</li>
       <li>إدارة الأعراض وصورها وأيقوناتها.</li>
-      <li>إدارة التصنيفات.</li>
+      <li>إدارة التصنيفات والحملات وبريد التواصل.</li>
       <li>حالة كل فيديو واضحة: متوفر أو غير متوفر.</li>
       <li>تصدير المحتوى واستيراده كملف.</li>
     </ul>
@@ -271,7 +300,9 @@ cd tabiby
 npm start   # http://localhost:3000</code></pre>
   <p>افتح العنوان من هواتف المرضى والأطباء على نفس الشبكة، أو اكتبه في «الإعدادات» داخل التطبيق.</p>
   <p>إضافة حساب حقيقي (يعطّل الحسابات التجريبية):</p>
-<pre><code>npm run add-staff -- dr.ahmed doctor "كلمة-مرور-قوية" "د. أحمد"</code></pre>
+<pre><code>npm run add-staff -- dr.ahmed doctor "كلمة-مرور-قوية" "د. أحمد"
+npm run add-staff -- mona.signs interpreter "كلمة-مرور-قوية" "منى — مترجمة إشارة"</code></pre>
+  <p>الأدوار: <code>doctor</code> و<code>nurse</code> و<code>interpreter</code> و<code>admin</code>. فيديوهات الشكاوى تُحفظ في <code>data/requests/</code> وتُحذف بعد 7 أيام.</p>
 </div></section>
 
 <section class="alt" id="signers"><div class="wrap">

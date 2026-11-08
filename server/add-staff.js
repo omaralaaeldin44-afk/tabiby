@@ -1,12 +1,12 @@
-// إضافة حساب طبيب/ممرض/مدير:  npm run add-staff -- <user> <doctor|nurse|admin> <password> "<الاسم>"
+// إضافة حساب طبيب/ممرض/مدير:  npm run add-staff -- <user> <doctor|nurse|interpreter|admin> <password> "<الاسم>"
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const [user, role, pw, name] = process.argv.slice(2);
-if (!user || !['doctor', 'nurse', 'admin'].includes(role) || !pw || pw.length < 8) {
-  console.error('الاستخدام: npm run add-staff -- <user> <doctor|nurse|admin> <password (8+ أحرف)> "<الاسم>"');
+if (!user || !['doctor', 'nurse', 'interpreter', 'admin'].includes(role) || !pw || pw.length < 8) {
+  console.error('الاستخدام: npm run add-staff -- <user> <doctor|nurse|interpreter|admin> <password (8+ أحرف)> "<الاسم>"');
   process.exit(1);
 }
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data');

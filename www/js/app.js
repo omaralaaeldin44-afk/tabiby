@@ -8,6 +8,8 @@ import * as pat from './screens-patient.js';
 import * as stf from './screens-staff.js';
 import { admin } from './screens-admin.js';
 import { Direct } from './direct.js';
+import * as ext from './screens-extra.js';
+import { icon } from './icons.js';
 
 const routes = [
   ['/', pub.home], ['/howto', pub.howto], ['/help', pub.help], ['/signs', pub.signsHome], ['/signs/:id', pub.signsCategory],
@@ -15,8 +17,12 @@ const routes = [
   ['/patient', pat.patientHub], ['/symptoms', pat.symptomsPage], ['/pain', pat.painPage], ['/visit', pat.visit],
   ['/login/:role', stf.login], ['/login/:role/:room', stf.login],
   ['/staff', stf.staffDash, 'staff'], ['/room/:id', stf.staffRoom, 'staff'],
-  ['/admin', admin, 'admin'], ['/admin/:tab', admin, 'admin']
+  ['/admin', admin, 'admin'], ['/admin/:tab', admin, 'admin'],
+  ['/complaint', ext.complaint], ['/appointment', ext.appointment], ['/requests', ext.requestsPage],
+  ['/campaigns', ext.campaigns], ['/about', ext.about], ['/contact', ext.contact],
+  ['/interpreter', ext.interpreterPortal, 'interpreter'], ['/interpreter/:tab', ext.interpreterPortal, 'interpreter']
 ];
+const TABS = [['/', 'house', 'الرئيسية'], ['/complaint', 'video', 'الشكوى'], ['/signs', 'hand', 'الفيديوهات'], ['/campaigns', 'megaphone', 'الحملات'], ['/settings', 'circle-user-round', 'حسابي']];
 
 function match(path) {
   const segs = path.split('/').filter(Boolean);
@@ -74,6 +80,8 @@ const header = document.getElementById('hdr');
 const main = document.getElementById('main');
 const fab = document.getElementById('fab');
 const offline = document.getElementById('offline');
+const tabbar = document.getElementById('tabbar');
+fab.innerHTML = icon('siren') + '<span>أحتاج مساعدة الآن</span>';
 
 function render() {
   app.cleanup?.(); app.cleanup = null;
@@ -83,17 +91,25 @@ function render() {
   if (!m) screen = pub.notFound();
   else if (m.guard === 'staff' && !stf.staffSession()) { toast('سجّل الدخول أولًا للوصول إلى بيانات المرضى.', 'error'); return go('/login/staff' + (path.startsWith('/room/') ? '/' + m.params.id : '')); }
   else if (m.guard === 'admin' && !stf.adminSession()) { toast('سجّل الدخول أولًا للوصول إلى لوحة الإدارة.', 'error'); return go('/login/admin'); }
+  else if (m.guard === 'interpreter' && !ext.interpreterSession()) { toast('سجّل الدخول أولًا كمترجم.', 'error'); return go('/login/interpreter'); }
   else {
     try { screen = m.fn(m.params, app); }
     catch (e) { console.error(e); screen = { title: 'خطأ', el: h('div', { class: 'alert urgent' }, 'حدث خطأ غير متوقع. ارجع إلى الرئيسية وحاول مرة أخرى.') }; }
   }
   app.cleanup = screen.cleanup || null;
+  const staffArea = !!m?.guard || path.startsWith('/login') || path.startsWith('/room');
+  const noNav = screen.noNav || staffArea;
   header.replaceChildren(
-    screen.home ? h('span', { class: 'hdr-spacer' }) : h('a', { class: 'hdr-btn', href: '#' + (screen.back || '/'), onclick: e => { e.preventDefault(); if (screen.back) go(screen.back); else history.length > 1 ? history.back() : go('/'); } }, '→ رجوع'),
-    h('h1', { class: 'hdr-title' }, screen.title),
-    h('a', { class: 'hdr-btn', href: '#/', 'aria-label': 'الرئيسية' }, '🏠'));
+    screen.home ? h('span', { class: 'brand-mark', html: icon('heart-pulse') })
+      : h('a', { class: 'hdr-btn', href: '#' + (screen.back || '/'), 'aria-label': 'رجوع', html: icon('chevron-right'), onclick: e => { e.preventDefault(); if (screen.back) go(screen.back); else history.length > 1 ? history.back() : go('/'); } }),
+    h('h1', { class: 'hdr-title' }, h('strong', {}, screen.title), screen.sub && h('small', {}, screen.sub)),
+    noNav && !screen.home && h('a', { class: 'hdr-btn', href: '#/', 'aria-label': 'الرئيسية', html: icon('house') }));
   main.replaceChildren(screen.el);
-  fab.hidden = !!screen.noFab;
+  fab.hidden = !!screen.noFab || staffArea;
+  document.body.classList.toggle('no-nav', noNav);
+  tabbar.hidden = noNav;
+  const cur = '/' + (path.split('/').filter(Boolean)[0] || '');
+  tabbar.replaceChildren(...TABS.map(([href, ico, label]) => h('a', { href: '#' + href, 'aria-current': (href === cur || (href === '/signs' && cur === '/sign')) ? 'page' : null, html: icon(ico) + '<span>' + label + '</span>' })));
   window.scrollTo(0, 0);
   main.focus({ preventScroll: true });
 }

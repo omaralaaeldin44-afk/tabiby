@@ -2,7 +2,7 @@
 import { h, toast, modal, confirmBox, iconEl, videoBadge, videoPlayer, badge } from './ui.js';
 import { content, saveContent, byId, uid, Media, clearProbe, resetContent, replaceContent, videoSource } from './db.js';
 import { Session } from './state.js';
-import { ANSWER_TYPES } from './seed.js';
+import { ANSWER_TYPES, CAMPAIGN_TYPES } from './seed.js';
 
 const save = () => { if (!saveContent()) toast('تعذّر الحفظ: مساحة التخزين ممتلئة.', 'error'); };
 
@@ -198,11 +198,48 @@ function tabCategories() {
   return h('div', {}, h('button', { class: 'btn primary block', type: 'button', onclick: () => edit() }, '＋ إضافة تصنيف'), list);
 }
 
+/* ---------- تبويب الحملات ---------- */
+function tabCampaigns() {
+  const c = content(); const list = h('div', { class: 'list' });
+  const edit = cmp => {
+    const isNew = !cmp; const x = cmp || { id: uid('cmp'), type: 'vaccination', title: '', body: '', date: '', place: '', signId: '', published: false };
+    formModal({
+      title: isNew ? 'إضافة حملة' : 'تعديل الحملة', values: x,
+      fields: [
+        { name: 'title', label: 'عنوان الحملة', required: true },
+        { name: 'type', label: 'النوع', type: 'select', options: Object.entries(CAMPAIGN_TYPES).map(([v, l]) => ({ v, l })) },
+        { name: 'body', label: 'التفاصيل بلغة بسيطة', type: 'textarea', required: true },
+        { name: 'date', label: 'الموعد (اختياري)', hint: 'مثال: من 10 إلى 20 نوفمبر، 9 صباحًا – 2 ظهرًا' },
+        { name: 'place', label: 'المكان (اختياري)' },
+        { name: 'signId', label: 'فيديو الإشارة المرتبط', type: 'select', options: signOptions(c) },
+        { name: 'published', label: 'منشورة (تظهر للمستخدمين)', type: 'checkbox' }
+      ],
+      onSave: o => { Object.assign(x, o); if (isNew) c.campaigns.unshift(x); save(); toast('تم الحفظ.', 'success'); draw(); }
+    });
+  };
+  const draw = () => list.replaceChildren(...(c.campaigns.length ? c.campaigns.map(x => h('div', { class: 'row wrap' },
+    h('span', { class: 'row-main' }, h('strong', {}, x.title), h('small', {}, CAMPAIGN_TYPES[x.type] || '')),
+    badge(x.published ? 'منشورة' : 'مسودة', x.published ? 'ok' : 'warn'),
+    h('span', { class: 'row-actions' },
+      h('button', { class: 'btn secondary', type: 'button', onclick: () => edit(x) }, 'تعديل'),
+      h('button', { class: 'btn ghost', type: 'button', onclick: async () => { if (await confirmBox('حذف هذه الحملة؟')) { c.campaigns = c.campaigns.filter(y => y !== x); save(); draw(); } } }, 'حذف')))) : [h('p', { class: 'empty' }, 'لا توجد حملات.')]));
+  draw();
+  return h('div', {}, h('p', { class: 'note' }, 'حملات التطعيم والتوعية تظهر في صفحة «الحملات». الحملتان الموجودتان مثالان تجريبيان — عدّلهما أو احذفهما.'),
+    h('button', { class: 'btn primary block', type: 'button', onclick: () => edit() }, '＋ إضافة حملة'), list);
+}
+
 /* ---------- تبويب الأدوات ---------- */
 function tabTools(redraw) {
   const c = content();
   const importIn = h('input', { type: 'file', accept: 'application/json', class: 'input', 'aria-label': 'ملف المحتوى' });
+  const email = h('input', { class: 'input', type: 'email', dir: 'ltr', value: c.settings?.contactEmail || '', placeholder: 'info@example.org', 'aria-label': 'بريد التواصل' });
   return h('div', {},
+    h('div', { class: 'card' }, h('h2', {}, 'بريد التواصل'), h('p', { class: 'note' }, 'يظهر في صفحة «اتصل بنا». اتركه فارغًا إن لم يكن هناك بريد بعد.'), email,
+      h('button', { class: 'btn primary block', type: 'button', onclick: () => {
+        const v = email.value.trim();
+        if (v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast('البريد غير صحيح.', 'error');
+        c.settings = { ...(c.settings || {}), contactEmail: v }; save(); toast('تم الحفظ.', 'success');
+      } }, 'حفظ البريد')),
     h('div', { class: 'card' }, h('h2', {}, 'نسخة احتياطية'),
       h('p', { class: 'note' }, 'تُحفظ التعديلات على هذا الجهاز. لنقلها إلى أجهزة أخرى صدّر الملف ثم استورده هناك. (ملفات الفيديو المرفوعة لا تدخل في الملف؛ ضعها في مجلد videos عند بناء التطبيق.)'),
       h('button', { class: 'btn primary block', type: 'button', onclick: () => {
@@ -226,8 +263,8 @@ function tabTools(redraw) {
 export function admin({ tab = 'signs' }) {
   const s = Session.get();
   const body = h('div');
-  const tabs = [['signs', '🤟 الفيديوهات والجمل'], ['questions', '❓ الأسئلة'], ['symptoms', '🖼️ الأعراض'], ['categories', '🗂️ التصنيفات'], ['tools', '🧰 أدوات']];
-  const redraw = () => body.replaceChildren({ signs: tabSigns, questions: tabQuestions, symptoms: tabSymptoms, categories: tabCategories, tools: tabTools }[tab](redraw));
+  const tabs = [['signs', '🤟 الفيديوهات والجمل'], ['questions', '❓ الأسئلة'], ['symptoms', '🖼️ الأعراض'], ['categories', '🗂️ التصنيفات'], ['campaigns', '📣 الحملات'], ['tools', '🧰 أدوات']];
+  const redraw = () => body.replaceChildren(({ signs: tabSigns, questions: tabQuestions, symptoms: tabSymptoms, categories: tabCategories, campaigns: tabCampaigns, tools: tabTools }[tab] || tabSigns)(redraw));
   redraw();
   return {
     title: 'إدارة المحتوى', noFab: true,

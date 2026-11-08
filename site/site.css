@@ -1,7 +1,7 @@
 :root {
-  --bg: #f4f9f9; --surface: #ffffff; --text: #10302f; --muted: #456564;
-  --primary: #0f766e; --primary-d: #0b5a54; --blue: #1d5f93; --danger: #b71c1c;
-  --line: #cfe2e2; --soft: #e2f2f1; --radius: 18px;
+  --bg: #f7f5f0; --surface: #ffffff; --text: #1c2b29; --muted: #5a6b68;
+  --primary: #1f5f56; --primary-d: #164841; --blue: #1f5f56; --danger: #b71c1c;
+  --line: #e6e2d9; --soft: #e5efec; --radius: 18px;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }

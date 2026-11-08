@@ -24,13 +24,14 @@ async function localLogin(u, p) {
 
 let attempts = 0, lockUntil = 0;
 export function login({ role, room }) {
-  const isAdmin = role === 'admin';
+  const isAdmin = role === 'admin', isInterp = role === 'interpreter';
+  const ROLE_TITLE = isAdmin ? 'دخول مسؤول المحتوى' : isInterp ? 'دخول مترجمي الإشارة' : 'دخول الطبيب أو الممرض';
   const user = h('input', { class: 'input', autocomplete: 'username', dir: 'ltr', required: true, 'aria-label': 'اسم المستخدم' });
   const pass = h('input', { class: 'input', type: 'password', autocomplete: 'current-password', dir: 'ltr', required: true, 'aria-label': 'كلمة المرور' });
   const err = h('div', { class: 'alert urgent', role: 'alert', hidden: true });
   const form = h('form', { class: 'card', novalidate: true },
-    h('h2', {}, isAdmin ? 'دخول مسؤول المحتوى' : 'دخول الطبيب أو الممرض'),
-    h('p', { class: 'note' }, 'الدخول مطلوب لحماية بيانات المرضى.'), netBadge(),
+    h('h2', {}, ROLE_TITLE),
+    h('p', { class: 'note' }, isInterp ? 'هنا تصل فيديوهات المرضى الصم وطلبات مواعيد العيادات التي تحتاج مترجمًا متفرغًا.' : 'الدخول مطلوب لحماية بيانات المرضى.'), netBadge(),
     h('label', { class: 'field' }, 'اسم المستخدم', user), h('label', { class: 'field' }, 'كلمة المرور', pass), err,
     h('button', { class: 'btn primary block', type: 'submit' }, 'تسجيل الدخول'));
   const fail = m => { err.hidden = false; err.textContent = m; };
@@ -41,10 +42,10 @@ export function login({ role, room }) {
     const btn = form.querySelector('button[type=submit]'); btn.disabled = true;
     try {
       const s = Net.mode === 'server' ? { ...(await serverLogin(user.value.trim(), pass.value)), user: user.value.trim() } : await localLogin(user.value.trim(), pass.value);
-      const ok = isAdmin ? s.role === 'admin' : (s.role === 'doctor' || s.role === 'nurse');
+      const ok = isAdmin ? s.role === 'admin' : isInterp ? s.role === 'interpreter' : (s.role === 'doctor' || s.role === 'nurse');
       if (!ok) return fail('هذا الحساب لا يملك صلاحية هذه الصفحة.');
       attempts = 0; Session.set(s); toast('أهلًا ' + s.name, 'success');
-      go(isAdmin ? '/admin' : (room ? '/room/' + room : '/staff'));
+      go(isAdmin ? '/admin' : isInterp ? '/interpreter' : (room ? '/room/' + room : '/staff'));
     } catch (ex) {
       attempts++; if (attempts >= 5) { lockUntil = Date.now() + 60e3; attempts = 0; }
       fail(ex.msg || ex.data?.message || (ex.status ? 'اسم المستخدم أو كلمة المرور غير صحيحة.' : 'تعذّر الاتصال بالخادم.'));
@@ -52,9 +53,9 @@ export function login({ role, room }) {
   };
   const demo = h('details', { class: 'card' }, h('summary', {}, 'حسابات تجريبية (للاختبار فقط)'),
     h('ul', { class: 'plain', dir: 'ltr' },
-      h('li', {}, 'dr.demo / Demo@Doctor1'), h('li', {}, 'nurse.demo / Demo@Nurse1'), h('li', {}, 'admin.demo / Demo@Admin1')),
+      h('li', {}, 'dr.demo / Demo@Doctor1'), h('li', {}, 'nurse.demo / Demo@Nurse1'), h('li', {}, 'interp.demo / Demo@Interp1'), h('li', {}, 'admin.demo / Demo@Admin1')),
     h('p', { class: 'note' }, 'احذف هذه الحسابات قبل الاستخدام الفعلي (انظر README).'));
-  return { title: isAdmin ? 'دخول الإدارة' : 'دخول الطبيب/الممرض', back: '/', noFab: true, el: h('div', {}, form, demo) };
+  return { title: isAdmin ? 'دخول الإدارة' : isInterp ? 'أنا مترجم إشارة' : 'أنا طبيب أو ممرض', sub: 'بيانات المرضى محمية بتسجيل الدخول.', back: '/', noFab: true, el: h('div', {}, form, demo) };
 }
 
 export const staffSession = () => { const s = Session.get(); return s && (s.role === 'doctor' || s.role === 'nurse') ? s : null; };

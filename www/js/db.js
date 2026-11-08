@@ -11,6 +11,8 @@ export function content() {
   if (!cache) {
     const saved = ls.get(KEY, null);
     cache = saved && saved.signs ? saved : seedContent();
+    cache.campaigns ??= [];
+    cache.settings ??= { contactEmail: '' };
   }
   return cache;
 }

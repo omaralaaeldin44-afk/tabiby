@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#1f5f56">
 <meta name="description" content="تشغيل خادم طبيبي يفهمني، إضافة الفيديوهات، وتحويل التطبيق إلى APK.">
 <title>للمطورين والمستشفيات – طبيبي يفهمني</title>
 <link rel="icon" href="img/icon.svg" type="image/svg+xml">
@@ -28,7 +28,9 @@ cd tabiby
 npm start   # http://localhost:3000</code></pre>
   <p>افتح العنوان من هواتف المرضى والأطباء على نفس الشبكة، أو اكتبه في «الإعدادات» داخل التطبيق.</p>
   <p>إضافة حساب حقيقي (يعطّل الحسابات التجريبية):</p>
-<pre><code>npm run add-staff -- dr.ahmed doctor "كلمة-مرور-قوية" "د. أحمد"</code></pre>
+<pre><code>npm run add-staff -- dr.ahmed doctor "كلمة-مرور-قوية" "د. أحمد"
+npm run add-staff -- mona.signs interpreter "كلمة-مرور-قوية" "منى — مترجمة إشارة"</code></pre>
+  <p>الأدوار: <code>doctor</code> و<code>nurse</code> و<code>interpreter</code> و<code>admin</code>. فيديوهات الشكاوى تُحفظ في <code>data/requests/</code> وتُحذف بعد 7 أيام.</p>
 </div></section>
 
 <section class="alt" id="signers"><div class="wrap">

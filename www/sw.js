@@ -1,9 +1,10 @@
 // Service worker: يجعل التطبيق يعمل دون إنترنت (الشبكة أولًا ثم النسخة المحفوظة).
-const V = 'tby-v3';
+const V = 'tby-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'css/style.css', 'icons/icon.svg', 'icons/icon-192.png',
   'js/app.js', 'js/db.js', 'js/rooms.js', 'js/seed.js', 'js/state.js', 'js/ui.js', 'js/staff-demo.js',
   'js/screens-public.js', 'js/screens-patient.js', 'js/screens-staff.js', 'js/screens-admin.js',
-  'js/direct.js', 'js/vendor/qrcode.js', 'js/vendor/jsQR.js'];
+  'js/direct.js', 'js/vendor/qrcode.js', 'js/vendor/jsQR.js', 'js/icons.js', 'js/requests.js', 'js/screens-extra.js',
+  'fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2', 'fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {

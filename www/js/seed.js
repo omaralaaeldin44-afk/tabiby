@@ -5,6 +5,8 @@ export const BODY_PARTS = {
   legR: 'الرجل اليمنى', legL: 'الرجل اليسرى', back: 'الظهر', other: 'مكان آخر'
 };
 export const SEVERITY = ['', 'خفيف', 'متوسط', 'شديد'];
+export const CAMPAIGN_TYPES = { vaccination: 'حملة تطعيم', awareness: 'حملة توعية', announcement: 'إعلان عام' };
+export const COMPLAINT_SYMPTOMS = ['الصداع', 'ألم البطن', 'ألم الصدر', 'الدوخة', 'الحرارة', 'الغثيان', 'الحساسية', 'صعوبة التنفس'];
 export const ANSWER_TYPES = { yesno: 'نعم / لا / لا أعرف', choices: 'اختيارات', text: 'كتابة' };
 
 const CATS = [
@@ -83,6 +85,16 @@ export function seedContent() {
     questions: QUESTIONS.map(([sid, answerType, choices]) => ({
       id: 'q_' + sid, catId: catOf[sid], text: textOf[sid], answerType, choices: choices || [], signId: sid
     })),
-    symptoms: SYMPTOMS.map(([id, name, icon, signId, urgent, goPain]) => ({ id, name, icon, signId, urgent, goPain: !!goPain }))
+    symptoms: SYMPTOMS.map(([id, name, icon, signId, urgent, goPain]) => ({ id, name, icon, signId, urgent, goPain: !!goPain })),
+    campaigns: seedCampaigns(),
+    settings: { contactEmail: '' }
   };
+}
+
+// أمثلة تجريبية فقط — تُحذف أو تُعدّل من لوحة الإدارة.
+export function seedCampaigns() {
+  return [
+    { id: 'cmp1', type: 'vaccination', title: 'مثال تجريبي: حملة تطعيم ضد الإنفلونزا', body: 'هذا مثال لشكل الحملة. اكتب هنا المكان والموعد والفئة المستهدفة، واربط الحملة بفيديو إشارة يشرحها.', date: '', place: '', signId: '', published: true },
+    { id: 'cmp2', type: 'awareness', title: 'مثال تجريبي: يوم توعية بحقوق المريض الأصم', body: 'هذا مثال لحملة توعية. من حقك طلب مترجم لغة إشارة، ومن حقك أن تفهم ما يقوله الطبيب.', date: '', place: '', signId: '', published: true }
+  ];
 }
